@@ -210,7 +210,11 @@ pub extern "C" fn _start() -> ! {
     let _ = writeln!(
         serial,
         "[display] Limine terminal: {}",
-        if display_ready { "available" } else { "unavailable" }
+        if display_ready {
+            "available"
+        } else {
+            "unavailable"
+        }
     );
     halt()
 }
