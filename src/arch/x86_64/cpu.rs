@@ -17,35 +17,27 @@ pub struct CpuInfo {
 }
 
 /// Queries CPUID and returns the processor identity and selected feature bits.
-///
-/// # Safety
-/// CPUID is available on all x86_64 processors. The intrinsic is used only
-/// with architectural leaf values and does not access memory or device state.
 pub fn detect() -> CpuInfo {
-    // SAFETY: CPUID leaf 0 is supported on every x86_64 processor.
-    let basic = unsafe { __cpuid(0) };
+    let basic = __cpuid(0);
     let mut vendor = [0u8; 12];
     vendor[0..4].copy_from_slice(&basic.ebx.to_le_bytes());
     vendor[4..8].copy_from_slice(&basic.edx.to_le_bytes());
     vendor[8..12].copy_from_slice(&basic.ecx.to_le_bytes());
 
-    // SAFETY: Query leaf 1 only when the processor advertises its availability.
     let leaf1 = if basic.eax >= 1 {
-        unsafe { __cpuid(1) }
+        __cpuid(1)
     } else {
-        unsafe { __cpuid(0) }
+        __cpuid(0)
     };
 
-    // SAFETY: The extended maximum-leaf query is defined by the x86 CPUID interface.
-    let extended = unsafe { __cpuid(0x8000_0000) };
+    let extended = __cpuid(0x8000_0000);
     let max_extended_leaf = extended.eax;
 
-    // SAFETY: Query the extended feature leaf only when it is advertised.
     let extended_features = if max_extended_leaf >= 0x8000_0001 {
-        unsafe { __cpuid(0x8000_0001) }
+        __cpuid(0x8000_0001)
     } else {
         // Leaf zero is a safe fallback; its feature bits are not interpreted below.
-        unsafe { __cpuid(0) }
+        __cpuid(0)
     };
 
     CpuInfo {
