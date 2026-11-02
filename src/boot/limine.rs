@@ -73,7 +73,7 @@ pub unsafe fn memory_map_summary() -> Option<MemoryMapSummary> {
 
     for index in 0..entry_count {
         // SAFETY: The response advertises entry_count pointers in the entries array.
-        let entry_ptr = unsafe { ptr::read_volatile(entries.add(index)) };
+        let entry_ptr = unsafe { ptr::read_volatile(entries.add(index as usize)) };
         if entry_ptr.is_null() {
             return None;
         }
