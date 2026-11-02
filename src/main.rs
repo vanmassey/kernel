@@ -317,7 +317,7 @@ pub extern "C" fn _start() -> ! {
     }
     let _ = writeln!(
         serial,
-        "[boot] Milestone 0.11: kernel address-space management"
+        "[boot] Milestone 0.12: general 4 KiB page mapping"
     );
     let _ = writeln!(serial, "[boot] Display initialisation complete; CPU halted");
     halt()
