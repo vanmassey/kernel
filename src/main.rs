@@ -1,5 +1,6 @@
 #![no_std]
-#[no_main]#![feature(alloc_error_handler)]
+#![no_main]
+#![feature(alloc_error_handler)]
 
 extern crate alloc;
 
@@ -358,7 +359,7 @@ fn allocation_error(layout: Layout) -> ! {
     let mut serial = SerialPort;
     let _ = writeln!(
         serial,
-        "\\n[ALLOC ERROR] Could not allocate {} bytes with alignment {}",
+        "\n[ALLOC ERROR] Could not allocate {} bytes with alignment {}",
         layout.size(),
         layout.align()
     );
