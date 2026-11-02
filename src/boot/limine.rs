@@ -209,7 +209,6 @@ pub(crate) unsafe fn memory_map_entries() -> Option<MemoryMapEntries> {
     })
 }
 
-
 const LIMINE_FRAMEBUFFER_REQUEST_ID_0: u64 = 0x9d58_27dc_d881_dd75;
 const LIMINE_FRAMEBUFFER_REQUEST_ID_1: u64 = 0xa314_8604_f6fa_b11b;
 
@@ -267,9 +266,7 @@ static mut FRAMEBUFFER_REQUEST: FramebufferRequest = FramebufferRequest {
 /// Must only be called after Limine has transferred control to the kernel.
 /// The response and framebuffer structures must remain mapped and valid.
 pub(crate) unsafe fn framebuffer() -> Option<FramebufferInfo> {
-    let response = unsafe {
-        ptr::read_volatile(ptr::addr_of!(FRAMEBUFFER_REQUEST.response))
-    };
+    let response = unsafe { ptr::read_volatile(ptr::addr_of!(FRAMEBUFFER_REQUEST.response)) };
     if response.is_null() {
         return None;
     }
@@ -291,24 +288,16 @@ pub(crate) unsafe fn framebuffer() -> Option<FramebufferInfo> {
         height: unsafe { ptr::read_volatile(ptr::addr_of!((*framebuffer).height)) },
         pitch: unsafe { ptr::read_volatile(ptr::addr_of!((*framebuffer).pitch)) },
         bpp: unsafe { ptr::read_volatile(ptr::addr_of!((*framebuffer).bpp)) },
-        memory_model: unsafe {
-            ptr::read_volatile(ptr::addr_of!((*framebuffer).memory_model))
-        },
-        red_mask_size: unsafe {
-            ptr::read_volatile(ptr::addr_of!((*framebuffer).red_mask_size))
-        },
-        red_mask_shift: unsafe {
-            ptr::read_volatile(ptr::addr_of!((*framebuffer).red_mask_shift))
-        },
+        memory_model: unsafe { ptr::read_volatile(ptr::addr_of!((*framebuffer).memory_model)) },
+        red_mask_size: unsafe { ptr::read_volatile(ptr::addr_of!((*framebuffer).red_mask_size)) },
+        red_mask_shift: unsafe { ptr::read_volatile(ptr::addr_of!((*framebuffer).red_mask_shift)) },
         green_mask_size: unsafe {
             ptr::read_volatile(ptr::addr_of!((*framebuffer).green_mask_size))
         },
         green_mask_shift: unsafe {
             ptr::read_volatile(ptr::addr_of!((*framebuffer).green_mask_shift))
         },
-        blue_mask_size: unsafe {
-            ptr::read_volatile(ptr::addr_of!((*framebuffer).blue_mask_size))
-        },
+        blue_mask_size: unsafe { ptr::read_volatile(ptr::addr_of!((*framebuffer).blue_mask_size)) },
         blue_mask_shift: unsafe {
             ptr::read_volatile(ptr::addr_of!((*framebuffer).blue_mask_shift))
         },
