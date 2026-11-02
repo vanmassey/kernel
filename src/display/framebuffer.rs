@@ -121,11 +121,11 @@ impl Display {
         self.rectangle(0, 0, self.info.width, self.info.height, background);
         self.rectangle(0, 0, self.info.width, 36 * scale, panel);
         self.rectangle(0, 0, self.info.width, 3 * scale, cyan);
-        self.text(margin, 12 * scale, "SESTINA // BOOT MONITOR", scale, cyan);
+        self.text(margin, 12 * scale, "SESTINA OPERATING SYSTEM", scale, cyan);
         self.text(
             self.info.width.saturating_sub(210 * scale),
             12 * scale,
-            "X86_64  |  DEV 0.12",
+            "KERNEL 0.12  |  X86_64",
             scale,
             muted,
         );
@@ -148,15 +148,7 @@ impl Display {
                 if index == 0 { white } else { cyan },
             );
         }
-        self.text(
-            logo_x,
-            logo_y + 54 * scale,
-            "A SMALL SYSTEM. A CLEAR PURPOSE.",
-            scale,
-            muted,
-        );
-
-        let panel_y = logo_y + 82 * scale;
+        let panel_y = logo_y + 68 * scale;
         let panel_height = self
             .info
             .height
@@ -167,14 +159,14 @@ impl Display {
         self.text(
             margin + 14 * scale,
             panel_y + 12 * scale,
-            "BOOT SEQUENCE / LIVE KERNEL OUTPUT",
+            "KERNEL INITIALISATION SUMMARY",
             scale,
             amber,
         );
         self.text(
             self.info.width.saturating_sub(margin + 110 * scale),
             panel_y + 12 * scale,
-            "STATUS: RUNNING",
+            "STATUS: COMPLETE",
             scale,
             green,
         );
@@ -186,25 +178,25 @@ impl Display {
         let available_height = panel_height.saturating_sub(38 * scale + footer_space);
         let visible_rows = (available_height / line_height).max(1) as usize;
         let logs: [(&str, Colour); 19] = [
-            ("POWER-ON SELF TEST ............... OK", green),
             ("LIMINE BOOT PROTOCOL ............. OK", green),
-            ("KERNEL IMAGE .............. LOADED", green),
+            ("KERNEL ENTRY POINT ............... OK", green),
             ("COM1 SERIAL CONSOLE .............. OK", green),
             ("INTERRUPT DESCRIPTOR TABLE ....... OK", green),
             ("CPU IDENTIFICATION ............... OK", green),
-            ("PHYSICAL MEMORY MAP .............. OK", green),
-            ("HIGHER-HALF DIRECT MAP ........... OK", green),
-            ("PHYSICAL FRAME ALLOCATOR ......... OK", green),
-            ("KERNEL HEAP ...................... OK", green),
-            ("RUST ALLOCATOR ................... OK", green),
-            ("FRAMEBUFFER ...................... OK", green),
-            ("PAGE TABLE ROOT ........... ACTIVE", green),
-            ("4K PAGE MAPPER ................... OK", green),
-            ("VIRTUAL ADDRESS TRANSLATION ...... OK", green),
-            ("EXCEPTION HANDLERS ............... OK", green),
-            ("CHECKING KERNEL INVARIANTS ....... OK", cyan),
-            ("STARTUP SEQUENCE ................. DONE", amber),
-            ("WELCOME TO SESTINA.", white),
+            ("CPU FEATURES ..................... DETECTED", green),
+            ("PHYSICAL MEMORY MAP .............. READ", green),
+            ("HIGHER-HALF DIRECT MAP ........... ACTIVE", green),
+            ("PHYSICAL FRAME ALLOCATOR ......... READY", green),
+            ("KERNEL HEAP ...................... READY", green),
+            ("HEAP ALLOCATOR SELF-TEST ......... PASSED", green),
+            ("RUST VEC ALLOCATION TEST ......... PASSED", green),
+            ("FRAMEBUFFER ...................... AVAILABLE", green),
+            ("KERNEL ADDRESS SPACE ............. ACTIVE", green),
+            ("INITIAL 4K PAGE MAPPING .......... PASSED", green),
+            ("GENERAL 4K PAGE MAPPER ........... PASSED", green),
+            ("EXCEPTION HANDLERS ............... INSTALLED", green),
+            ("KERNEL MILESTONE ................. 0.12", amber),
+            ("KERNEL INITIALISATION ............ COMPLETE", white),
         ];
 
         let log_area_height = visible_rows as u64 * line_height;
@@ -250,7 +242,7 @@ impl Display {
         self.text(
             margin,
             footer_y,
-            "SESTINA OS // BUILT WITH CARE",
+            "SESTINA KERNEL // X86_64",
             scale,
             muted,
         );
