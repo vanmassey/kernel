@@ -261,7 +261,8 @@ pub extern "C" fn _start() -> ! {
                     let _ = writeln!(
                         serial,
                         "[memory] General 4 KiB mapper self-test: {}",
-                        if additional_page_mapping_self_test(&mut allocator, offset, second_virtual) {
+                        if additional_page_mapping_self_test(&mut allocator, offset, second_virtual)
+                        {
                             "passed"
                         } else {
                             "FAILED"

@@ -190,10 +190,7 @@ unsafe fn ensure_next_table(
         unsafe { allocate_zeroed_table(allocator, hhdm_offset) }.ok_or(MapError::OutOfMemory)?;
     // SAFETY: The parent entry is within a valid table and the new frame is reserved.
     unsafe {
-        ptr::write_volatile(
-            parent.add(index),
-            frame.start_address | PRESENT | WRITABLE,
-        );
+        ptr::write_volatile(parent.add(index), frame.start_address | PRESENT | WRITABLE);
     }
     Ok(frame.start_address)
 }
