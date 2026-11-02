@@ -139,6 +139,14 @@ pub extern "C" fn _start() -> ! {
         let _ = writeln!(serial, "[memory] Limine memory map unavailable or invalid");
     }
 
+    // SAFETY: Limine populated the HHDM response before transferring control.
+    let direct_map_offset = unsafe { boot::limine::hhdm_offset() };
+    if let Some(offset) = direct_map_offset {
+        let _ = writeln!(serial, "[memory] HHDM offset: {:#018x}", offset);
+    } else {
+        let _ = writeln!(serial, "[memory] Limine HHDM response unavailable");
+    }
+
     // SAFETY: Limine's memory map remains available throughout early kernel startup.
     if let Some(mut allocator) = unsafe { memory::allocator::PhysicalFrameAllocator::new() } {
         if let Some(frame) = allocator.allocate_frame() {
@@ -147,6 +155,20 @@ pub extern "C" fn _start() -> ! {
                 "[memory] Allocated physical frame at {:#018x}",
                 frame.start_address
             );
+            if let Some(offset) = direct_map_offset {
+                match memory::frame::physical_to_virtual(frame.start_address, offset) {
+                    Some(virtual_address) => {
+                        let _ = writeln!(
+                            serial,
+                            "[memory] Direct-map virtual address: {:#018x}",
+                            virtual_address.as_u64()
+                        );
+                    }
+                    None => {
+                        let _ = writeln!(serial, "[memory] Physical address is not canonical through HHDM");
+                    }
+                }
+            }
         } else {
             let _ = writeln!(serial, "[memory] No usable physical frames available");
         }
@@ -162,8 +184,8 @@ pub extern "C" fn _start() -> ! {
         unsafe { core::arch::asm!("int3", options(nomem, nostack)) };
     }
 
-    let _ = writeln!(serial, "[boot] Milestone 0.6: CPU feature discovery");
-    let _ = writeln!(serial, "[boot] CPU halted; next: virtual memory");
+    let _ = writeln!(serial, "[boot] Milestone 0.7: HHDM address conversion");
+    let _ = writeln!(serial, "[boot] CPU halted; next: page-table management");
     halt()
 }
 
