@@ -245,9 +245,7 @@ pub extern "C" fn _start() -> ! {
 
         if let Some(offset) = direct_map_offset {
             // SAFETY: Early startup is single-core, ring 0, and Limine's HHDM is active.
-            match unsafe {
-                memory::paging::create_kernel_address_space(&mut allocator, offset)
-            } {
+            match unsafe { memory::paging::create_kernel_address_space(&mut allocator, offset) } {
                 Some(address_space) => {
                     let _ = writeln!(
                         serial,
@@ -257,8 +255,7 @@ pub extern "C" fn _start() -> ! {
                     let _ = writeln!(
                         serial,
                         "[memory] 4 KiB page mapping self-test: passed ({:#018x} -> {:#018x})",
-                        address_space.test_virtual_address,
-                        address_space.test_physical_address
+                        address_space.test_virtual_address, address_space.test_physical_address
                     );
                 }
                 None => {
@@ -307,7 +304,10 @@ pub extern "C" fn _start() -> ! {
             let _ = writeln!(serial, "[display] No supported Limine RGB framebuffer");
         }
     }
-    let _ = writeln!(serial, "[boot] Milestone 0.11: kernel address-space management");
+    let _ = writeln!(
+        serial,
+        "[boot] Milestone 0.11: kernel address-space management"
+    );
     let _ = writeln!(serial, "[boot] Display initialisation complete; CPU halted");
     halt()
 }
