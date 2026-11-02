@@ -33,14 +33,14 @@ run: iso
 boot-test: iso
 	@set +e; timeout 15s qemu-system-x86_64 -M q35 -m 256M -cdrom build/kernel.iso -boot order=d -serial stdio -display none -no-reboot -no-shutdown > build/qemu-serial.log 2>&1; status=$$?; set -e; if [ $$status -ne 124 ] && [ $$status -ne 0 ]; then cat build/qemu-serial.log; exit $$status; fi
 	@echo "--- QEMU serial output ---"; cat build/qemu-serial.log
-	@grep -F "KERNEL :: x86_64 Rust kernel" build/qemu-serial.log
+	@grep -F "SESTINA :: x86_64 kernel" build/qemu-serial.log
 	@grep -F "[cpu] Exception diagnostics enabled (vectors 0-31)" build/qemu-serial.log
 	@grep -F "[cpu] Vendor:" build/qemu-serial.log
 	@grep -F "[cpu] NX:" build/qemu-serial.log
 	@grep -F "[memory] HHDM offset:" build/qemu-serial.log
 	@grep -F "[memory] Direct-map virtual address:" build/qemu-serial.log
-	@grep -F "[boot] Milestone 0.7: HHDM address conversion" build/qemu-serial.log
-	@grep -F "[display] Limine terminal:" build/qemu-serial.log
+	@grep -F "[boot] Milestone 0.8: framebuffer display" build/qemu-serial.log
+	@grep -F "[display] Framebuffer online:" build/qemu-serial.log
 	@echo "QEMU boot smoke test passed."
 
 exception-test: iso
