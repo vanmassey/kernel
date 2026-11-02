@@ -210,7 +210,11 @@ pub extern "C" fn _start() -> ! {
 
     match display::framebuffer::draw_boot_screen() {
         Some((width, height)) => {
-            let _ = writeln!(serial, "[display] Framebuffer online: {}x{} RGB", width, height);
+            let _ = writeln!(
+                serial,
+                "[display] Framebuffer online: {}x{} RGB",
+                width, height
+            );
         }
         None => {
             let _ = writeln!(serial, "[display] No supported Limine RGB framebuffer");
