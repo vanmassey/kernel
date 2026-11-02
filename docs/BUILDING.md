@@ -42,5 +42,6 @@ GitHub Actions runs this test on pushes and pull requests. The workflow download
 - The entry point assumes the x86_64 Limine protocol.
 - COM1 is configured for 38400 baud, 8 data bits, no parity, one stop bit.
 - Interrupts are not enabled yet. The kernel deliberately halts after startup messages.
-- The physical frame allocator is an early monotonic allocator; it does not free frames or establish virtual mappings.
-- Do not add heap allocation until a physical/virtual memory strategy and allocator invariants are documented.
+- The physical-frame allocator is monotonic and does not free frames.
+- The initial 256 KiB heap is backed by contiguous usable frames accessed through the Limine HHDM. It supports aligned bump allocation but does not reclaim deallocated memory.
+- The heap is an early kernel facility, not yet a general-purpose allocator for long-running workloads.
