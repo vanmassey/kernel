@@ -248,7 +248,13 @@ impl Display {
         }
 
         let footer_y = self.info.height.saturating_sub(18 * scale);
-        self.text(margin, footer_y, "SESTINA OS // BUILT WITH CARE", scale, muted);
+        self.text(
+            margin,
+            footer_y,
+            "SESTINA OS // BUILT WITH CARE",
+            scale,
+            muted,
+        );
         self.text(
             self.info.width.saturating_sub(margin + 66 * scale),
             footer_y,
