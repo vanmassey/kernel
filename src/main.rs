@@ -1,6 +1,10 @@
 #![no_std]
-#![no_main]
+#[no_main]#![feature(alloc_error_handler)]
 
+extern crate alloc;
+
+use alloc::vec::Vec;
+use core::alloc::Layout;
 use core::fmt::{self, Write};
 use core::panic::PanicInfo;
 
@@ -210,6 +214,11 @@ pub extern "C" fn _start() -> ! {
                                 "FAILED"
                             }
                         );
+                        let _ = writeln!(
+                            serial,
+                            "[memory] Rust Vec self-test: {}",
+                            if heap_vec_self_test() { "passed" } else { "FAILED" }
+                        );
                     } else {
                         let _ = writeln!(serial, "[memory] Kernel heap initialisation failed");
                     }
@@ -271,10 +280,23 @@ pub extern "C" fn _start() -> ! {
     }
     let _ = writeln!(
         serial,
-        "[boot] Milestone 0.8: framebuffer and paging inspection"
+        "[boot] Milestone 0.10: Rust allocation support"
     );
     let _ = writeln!(serial, "[boot] Display initialisation complete; CPU halted");
     halt()
+}
+
+fn heap_vec_self_test() -> bool {
+    let mut values = Vec::with_capacity(32);
+    for value in 0_usize..32 {
+        values.push(value * 3);
+    }
+
+    values.len() == 32
+        && values
+            .iter()
+            .enumerate()
+            .all(|(index, value)| *value == index * 3)
 }
 
 #[no_mangle]
@@ -329,6 +351,18 @@ fn exception_name(vector: u64) -> &'static str {
         31 => "Reserved",
         _ => "Unknown Exception",
     }
+}
+
+#[alloc_error_handler]
+fn allocation_error(layout: Layout) -> ! {
+    let mut serial = SerialPort;
+    let _ = writeln!(
+        serial,
+        "\\n[ALLOC ERROR] Could not allocate {} bytes with alignment {}",
+        layout.size(),
+        layout.align()
+    );
+    halt()
 }
 
 #[panic_handler]
