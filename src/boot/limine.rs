@@ -209,7 +209,6 @@ pub(crate) unsafe fn memory_map_entries() -> Option<MemoryMapEntries> {
     })
 }
 
-
 const LIMINE_TERMINAL_REQUEST_ID_0: u64 = 0xc8ac_5931_0c2b_0844;
 const LIMINE_TERMINAL_REQUEST_ID_1: u64 = 0xa68d_0c72_65d3_8878;
 
