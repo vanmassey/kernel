@@ -39,6 +39,7 @@ boot-test: iso
 	@grep -F "[cpu] NX:" build/qemu-serial.log
 	@grep -F "[memory] HHDM offset:" build/qemu-serial.log
 	@grep -F "[memory] Direct-map virtual address:" build/qemu-serial.log
+	@grep -F "[memory] Active page-table translation:" build/qemu-serial.log
 	@grep -F "[boot] Milestone 0.8: framebuffer display" build/qemu-serial.log
 	@grep -F "[display] Framebuffer online:" build/qemu-serial.log
 	@echo "QEMU boot smoke test passed."
