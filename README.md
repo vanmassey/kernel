@@ -21,7 +21,7 @@ The goal is a capable, maintainable general-purpose operating system with its ow
 
 ## Current development
 
-**Foundation — 0.1**
+**Current milestone — 0.8**
 
 - Freestanding Rust target and nightly toolchain
 - Limine request markers and kernel entry point
