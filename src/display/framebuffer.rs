@@ -208,7 +208,7 @@ impl Display {
         ];
 
         let log_area_height = visible_rows as u64 * line_height;
-        for (index, (message, colour)) in logs.iter().enumerate() {
+        for index in 0..logs.len() {
             self.rectangle(
                 margin + 8 * scale,
                 log_y,
@@ -241,10 +241,9 @@ impl Display {
                 if index + 1 == logs.len() { green } else { cyan },
             );
 
-            for _ in 0..180_000 {
+            for _ in 0..3_000_000 {
                 core::hint::spin_loop();
             }
-            let _ = (message, colour);
         }
 
         let footer_y = self.info.height.saturating_sub(18 * scale);
