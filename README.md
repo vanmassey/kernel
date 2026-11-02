@@ -21,7 +21,7 @@ The goal is a capable, maintainable general-purpose operating system with its ow
 
 ## Current development
 
-**Current milestone — 0.11**
+**Current milestone — 0.12**
 
 - Freestanding Rust target and nightly toolchain
 - Limine request markers and kernel entry point
@@ -35,12 +35,13 @@ The goal is a capable, maintainable general-purpose operating system with its ow
 - Initial 256 KiB kernel bump heap backed by contiguous usable physical frames and the Limine HHDM
 - Rust `alloc` support with an allocation-error handler and a QEMU-tested `Vec` allocation path
 - Kernel address-space cloning with a new PML4 root and a tested private 4 KiB mapping
+- General writable 4 KiB page mapper that allocates missing intermediate tables and invalidates the local TLB
 - COM1 serial output for early diagnostics
 - Kernel panic handler and CPU halt routine
 - Linker script and boot configuration
 - Automated formatting, compilation, and QEMU boot smoke tests with GitHub Actions
 
-Milestone 0.8 added a direct RGB framebuffer renderer for the Sestina startup screen and inspection of the active four-level page tables. Milestone 0.9 added a 256 KiB early kernel heap backed by a contiguous run of usable physical frames. Milestone 0.10 connected Rust's `alloc` crate to the heap and verified real `Vec` allocations during QEMU boot. Milestone 0.11 adds a cloned kernel PML4 root and creates a private 4 KiB mapping, then switches CR3 and verifies that the new virtual address aliases the intended physical frame. The cloned address space shares existing kernel page tables; process isolation and page reclamation are not yet implemented. Next milestones cover general page mapping, interrupt-controller setup, and timers. The QEMU smoke test builds a bootable Limine ISO and checks that the kernel reaches its startup milestone.
+Milestone 0.8 added a direct RGB framebuffer renderer for the Sestina startup screen and inspection of the active four-level page tables. Milestone 0.9 added a 256 KiB early kernel heap backed by a contiguous run of usable physical frames. Milestone 0.10 connected Rust's `alloc` crate to the heap and verified real `Vec` allocations during QEMU boot. Milestone 0.11 added a cloned kernel PML4 root and a private 4 KiB mapping. Milestone 0.12 adds a reusable writable 4 KiB mapper for the active kernel address space; it allocates missing intermediate tables, rejects conflicting huge-page and read-only parent entries, and invalidates the local TLB. The cloned address space still shares existing kernel page tables; unmapping, configurable permissions, process isolation, and page reclamation are not yet implemented. Next milestones cover page unmapping and permissions, interrupt-controller setup, and timers. The QEMU smoke test builds a bootable Limine ISO and checks that the kernel reaches its startup milestone.
 
 ## Build
 

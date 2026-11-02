@@ -167,7 +167,7 @@ impl Display {
         );
 
         let footer_y = panel_y + panel_height + 22 * scale;
-        self.text(margin, footer_y, "MILESTONE 0.11", scale, accent);
+        self.text(margin, footer_y, "MILESTONE 0.12", scale, accent);
         self.text(
             margin,
             footer_y + 20 * scale,

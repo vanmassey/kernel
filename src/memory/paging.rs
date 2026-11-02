@@ -4,6 +4,7 @@ use core::ptr;
 use core::sync::atomic::{compiler_fence, Ordering};
 
 const PRESENT: u64 = 1 << 0;
+const WRITABLE: u64 = 1 << 1;
 const HUGE_PAGE: u64 = 1 << 7;
 const ADDRESS_MASK: u64 = 0x000f_ffff_ffff_f000;
 const PAGE_4K: u64 = 4096;
@@ -137,6 +138,155 @@ pub unsafe fn translate_current(virtual_address: u64, hhdm_offset: u64) -> Optio
         physical_address: base | (virtual_address & (PAGE_4K - 1)),
         page_size: PageSize::Size4KiB,
     })
+}
+
+/// Errors returned when mapping a 4 KiB kernel page.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum MapError {
+    NonCanonicalVirtualAddress,
+    UnalignedAddress,
+    PhysicalAddressOutOfRange,
+    FiveLevelPaging,
+    InvalidPageTableAddress,
+    ParentNotWritable,
+    HugePageConflict,
+    AlreadyMapped,
+    OutOfMemory,
+}
+
+unsafe fn table_pointer(physical_address: u64, hhdm_offset: u64) -> Result<*mut u64, MapError> {
+    if physical_address & (PAGE_4K - 1) != 0 || physical_address & !ADDRESS_MASK != 0 {
+        return Err(MapError::InvalidPageTableAddress);
+    }
+    let virtual_address =
+        physical_to_virtual(physical_address, hhdm_offset).ok_or(MapError::InvalidPageTableAddress)?;
+    Ok(virtual_address.as_u64() as *mut u64)
+}
+
+unsafe fn ensure_next_table(
+    parent: *mut u64,
+    index: usize,
+    allocator: &mut PhysicalFrameAllocator,
+    hhdm_offset: u64,
+) -> Result<u64, MapError> {
+    if index >= 512 {
+        return Err(MapError::InvalidPageTableAddress);
+    }
+
+    // SAFETY: The caller supplies a valid, HHDM-mapped page-table page and an in-range index.
+    let entry = unsafe { ptr::read_volatile(parent.add(index)) };
+    if entry & PRESENT != 0 {
+        if entry & HUGE_PAGE != 0 {
+            return Err(MapError::HugePageConflict);
+        }
+        if entry & WRITABLE == 0 {
+            return Err(MapError::ParentNotWritable);
+        }
+        return Ok(entry & ADDRESS_MASK);
+    }
+
+    // SAFETY: The allocator returns a fresh usable frame, which is zeroed through the HHDM.
+    let (frame, _) = unsafe { allocate_zeroed_table(allocator, hhdm_offset) }
+        .ok_or(MapError::OutOfMemory)?;
+    // SAFETY: The parent entry is within a valid table and the new frame is reserved.
+    unsafe {
+        ptr::write_volatile(
+            parent.add(index),
+            frame.start_address | PRESENT | WRITABLE,
+        );
+    }
+    Ok(frame.start_address)
+}
+
+/// Maps one writable 4 KiB page in the currently active kernel address space.
+///
+/// Missing intermediate page tables are allocated from the supplied physical-frame
+/// allocator. Existing huge-page mappings and read-only parent entries are left untouched.
+///
+/// # Safety
+/// Must run in ring 0 with a valid Limine HHDM and four-level paging enabled. The caller
+/// must provide an allocator that exclusively owns its frames and must prevent concurrent
+/// page-table writers. The mapping is installed in the currently active address space.
+pub unsafe fn map_4k_current(
+    allocator: &mut PhysicalFrameAllocator,
+    hhdm_offset: u64,
+    virtual_address: u64,
+    physical_address: u64,
+) -> Result<(), MapError> {
+    let upper = virtual_address >> 48;
+    let sign = (virtual_address >> 47) & 1;
+    if !((sign == 0 && upper == 0) || (sign == 1 && upper == 0xffff)) {
+        return Err(MapError::NonCanonicalVirtualAddress);
+    }
+    if virtual_address & (PAGE_4K - 1) != 0 || physical_address & (PAGE_4K - 1) != 0 {
+        return Err(MapError::UnalignedAddress);
+    }
+    if physical_address & !ADDRESS_MASK != 0 {
+        return Err(MapError::PhysicalAddressOutOfRange);
+    }
+
+    let cr4: u64;
+    // SAFETY: Reading CR4 is privileged; this function requires ring 0.
+    unsafe {
+        core::arch::asm!(
+            "mov {}, cr4",
+            out(reg) cr4,
+            options(nomem, nostack, preserves_flags)
+        );
+    }
+    const CR4_LA57: u64 = 1 << 12;
+    if cr4 & CR4_LA57 != 0 {
+        return Err(MapError::FiveLevelPaging);
+    }
+
+    // SAFETY: This function is restricted to ring 0 with the active root accessible via HHDM.
+    let root_physical = unsafe { current_cr3() };
+    // SAFETY: The active PML4 is a valid, page-aligned physical page.
+    let root = unsafe { table_pointer(root_physical, hhdm_offset)? };
+
+    let pml4_index = ((virtual_address >> 39) & 0x1ff) as usize;
+    let pdpt_index = ((virtual_address >> 30) & 0x1ff) as usize;
+    let pd_index = ((virtual_address >> 21) & 0x1ff) as usize;
+    let pt_index = ((virtual_address >> 12) & 0x1ff) as usize;
+
+    // SAFETY: Each table pointer is derived from a present entry or a freshly allocated frame.
+    let pdpt_physical =
+        unsafe { ensure_next_table(root, pml4_index, allocator, hhdm_offset)? };
+    // SAFETY: The returned physical address identifies a valid page-table page.
+    let pdpt = unsafe { table_pointer(pdpt_physical, hhdm_offset)? };
+    // SAFETY: The index is in range and the parent table is valid.
+    let pd_physical =
+        unsafe { ensure_next_table(pdpt, pdpt_index, allocator, hhdm_offset)? };
+    // SAFETY: The returned physical address identifies a valid page-table page.
+    let pd = unsafe { table_pointer(pd_physical, hhdm_offset)? };
+    // SAFETY: The index is in range and the parent table is valid.
+    let pt_physical =
+        unsafe { ensure_next_table(pd, pd_index, allocator, hhdm_offset)? };
+    // SAFETY: The returned physical address identifies a valid page-table page.
+    let pt = unsafe { table_pointer(pt_physical, hhdm_offset)? };
+
+    // SAFETY: The leaf index is in range and the page-table page is valid.
+    if unsafe { ptr::read_volatile(pt.add(pt_index)) } & PRESENT != 0 {
+        return Err(MapError::AlreadyMapped);
+    }
+
+    // SAFETY: The leaf entry is in a valid page-table page and the frame is page-aligned.
+    unsafe {
+        ptr::write_volatile(
+            pt.add(pt_index),
+            physical_address | PRESENT | WRITABLE,
+        );
+    }
+    compiler_fence(Ordering::SeqCst);
+    // SAFETY: INVLPG is privileged and this function requires ring 0.
+    unsafe {
+        core::arch::asm!(
+            "invlpg [{}]",
+            in(reg) virtual_address,
+            options(nostack, preserves_flags)
+        );
+    }
+    Ok(())
 }
 
 /// Details of a new kernel address space with one private 4 KiB test mapping.

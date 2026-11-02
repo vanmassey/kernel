@@ -45,7 +45,8 @@ boot-test: iso
 	@grep -F "[memory] Rust Vec self-test: passed" build/qemu-serial.log
 	@grep -F "[memory] New PML4 active:" build/qemu-serial.log
 	@grep -F "[memory] 4 KiB page mapping self-test: passed" build/qemu-serial.log
-	@grep -F "[boot] Milestone 0.11: kernel address-space management" build/qemu-serial.log
+	@grep -F "[memory] General 4 KiB mapper self-test: passed" build/qemu-serial.log
+	@grep -F "[boot] Milestone 0.12: general 4 KiB page mapping" build/qemu-serial.log
 	@grep -F "[display] Framebuffer online:" build/qemu-serial.log
 	@echo "QEMU boot smoke test passed."
 
