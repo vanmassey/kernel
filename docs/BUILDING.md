@@ -45,3 +45,4 @@ GitHub Actions runs this test on pushes and pull requests. The workflow download
 - The physical-frame allocator is monotonic and does not free frames.
 - The initial 256 KiB heap is backed by contiguous usable frames accessed through the Limine HHDM. It supports aligned bump allocation and Rust `alloc` collections, but does not reclaim deallocated memory.
 - The heap is an early kernel facility, not yet a general-purpose allocator for long-running workloads.
+- The current address-space test clones the active kernel PML4 and adds one private 4 KiB mapping. Existing kernel page tables are shared; this is not yet process isolation.
