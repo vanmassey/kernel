@@ -10,10 +10,10 @@ The kernel is monolithic with modular internal subsystems. Rust is the primary l
 2. Limine boot information and physical memory-map discovery
 3. Usable physical-frame iteration and reservation
 4. Initial monotonic physical frame allocator
-5. CPU feature discovery and descriptor tables
-6. Virtual memory and kernel address-space layout
-7. Interrupt descriptor table and exception handlers
-8. Local APIC and timer
+5. Emergency interrupt descriptor table
+6. Per-exception diagnostics and CPU feature discovery
+7. Virtual memory and kernel address-space layout
+8. Interrupt-controller setup and timer
 9. Kernel heap
 10. Scheduler and task model
 11. System-call boundary and user mode
@@ -31,4 +31,4 @@ The kernel is monolithic with modular internal subsystems. Rust is the primary l
 
 ## Current implementation
 
-The kernel requests the Limine physical memory map, reports the number of entries and total usable memory over the legacy COM1 UART, and provides an iterator over usable 4 KiB physical frames. The initial physical-frame allocator consumes that iterator and returns each candidate frame at most once. It does not yet reclaim frames or create virtual mappings; those responsibilities belong to later memory-management stages.
+The kernel requests the Limine physical memory map, reports the number of entries and total usable memory over the legacy COM1 UART, and provides an iterator over usable 4 KiB physical frames. The initial physical-frame allocator consumes that iterator and returns each candidate frame at most once. The x86_64 architecture layer also installs a 256-entry IDT; every gate currently points to a non-returning emergency halt stub. It does not yet identify individual exceptions or handle hardware interrupts. Physical frames are not yet reclaimed or mapped into virtual memory.
