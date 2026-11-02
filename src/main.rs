@@ -111,9 +111,21 @@ pub extern "C" fn _start() -> ! {
     let vendor = core::str::from_utf8(&cpu.vendor).unwrap_or("unknown");
     let _ = writeln!(serial, "[cpu] Vendor: {}", vendor);
     let _ = writeln!(serial, "[cpu] CPUID basic leaf: {:#x}", cpu.max_basic_leaf);
-    let _ = writeln!(serial, "[cpu] CPUID extended leaf: {:#x}", cpu.max_extended_leaf);
-    let _ = writeln!(serial, "[cpu] SSE2: {}, APIC: {}, x2APIC: {}", cpu.has_sse2, cpu.has_apic, cpu.has_x2apic);
-    let _ = writeln!(serial, "[cpu] NX: {}, 1 GiB pages: {}, SYSCALL: {}, long mode: {}", cpu.has_nx, cpu.has_1gib_pages, cpu.has_syscall, cpu.has_long_mode);
+    let _ = writeln!(
+        serial,
+        "[cpu] CPUID extended leaf: {:#x}",
+        cpu.max_extended_leaf
+    );
+    let _ = writeln!(
+        serial,
+        "[cpu] SSE2: {}, APIC: {}, x2APIC: {}",
+        cpu.has_sse2, cpu.has_apic, cpu.has_x2apic
+    );
+    let _ = writeln!(
+        serial,
+        "[cpu] NX: {}, 1 GiB pages: {}, SYSCALL: {}, long mode: {}",
+        cpu.has_nx, cpu.has_1gib_pages, cpu.has_syscall, cpu.has_long_mode
+    );
 
     // SAFETY: Limine populated the memory-map response before transferring control.
     if let Some(memory_map) = unsafe { boot::limine::memory_map_summary() } {
