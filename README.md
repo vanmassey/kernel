@@ -32,9 +32,9 @@ The goal is a capable, maintainable general-purpose operating system with its ow
 - COM1 serial output for early diagnostics
 - Kernel panic handler and CPU halt routine
 - Linker script and boot configuration
-- Automated formatting and compilation checks with GitHub Actions
+- Automated formatting, compilation, and QEMU boot smoke tests with GitHub Actions
 
-The next development milestones cover per-exception diagnostics, interrupt-controller setup, virtual memory, and the kernel heap.
+The next development milestones cover per-exception diagnostics, interrupt-controller setup, virtual memory, and the kernel heap. The QEMU smoke test builds a bootable Limine ISO and checks that the kernel reaches its startup milestone.
 
 ## Build
 
