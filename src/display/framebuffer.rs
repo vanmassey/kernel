@@ -103,74 +103,48 @@ impl Display {
 
     fn draw_boot_screen(&mut self) {
         let background = Colour(0, 0, 0);
-        let white = Colour(210, 210, 210);
-        let muted = Colour(145, 145, 145);
-        let green = Colour(120, 205, 120);
-        let amber = Colour(220, 190, 110);
+        let text_colour = Colour(205, 205, 205);
+        let muted = Colour(150, 150, 150);
+        let success = Colour(130, 205, 130);
         let scale = if self.info.width >= 1000 && self.info.height >= 600 {
             2
         } else {
             1
         };
-        let margin = 24 * scale;
-        let line_height = 18 * scale;
+        let margin = 16 * scale;
+        let line_height = 12 * scale;
 
         self.rectangle(0, 0, self.info.width, self.info.height, background);
-        self.text(margin, margin, "Sestina 0.12", scale, white);
-        self.text(
-            margin,
-            margin + line_height * 2,
-            "Booting Sestina...",
-            scale,
-            muted,
-        );
 
-        let logs: [(&str, Colour); 17] = [
-            ("Limine boot protocol detected", green),
-            ("Kernel entry point reached", green),
-            ("Serial console initialised", green),
-            ("Interrupt descriptor table installed", green),
-            ("Processor identification complete", green),
-            ("CPU features detected", green),
-            ("Physical memory map read", green),
-            ("Higher-half direct map active", green),
-            ("Physical frame allocator initialised", green),
-            ("Kernel heap initialised", green),
-            ("Heap allocator self-test passed", green),
-            ("Rust Vec allocation test passed", green),
-            ("Framebuffer detected", green),
-            ("Kernel address space active", green),
-            ("4 KiB page mapping test passed", green),
-            ("Exception handlers installed", green),
-            ("Kernel initialisation complete", amber),
+        let lines: [(&str, Colour); 20] = [
+            ("Sestina 0.12", text_colour),
+            ("", text_colour),
+            ("Booting kernel...", muted),
+            ("Limine boot protocol detected", success),
+            ("Kernel entry point reached", success),
+            ("Serial console initialised", success),
+            ("Interrupt descriptor table installed", success),
+            ("Processor identification complete", success),
+            ("CPU features detected", success),
+            ("Physical memory map read", success),
+            ("Higher-half direct map active", success),
+            ("Physical frame allocator initialised", success),
+            ("Kernel heap initialised", success),
+            ("Heap allocator self-test passed", success),
+            ("Rust allocation self-test passed", success),
+            ("Framebuffer detected", success),
+            ("Kernel address space active", success),
+            ("4 KiB page mapping test passed", success),
+            ("Exception handlers installed", success),
+            ("Kernel initialisation complete.", text_colour),
         ];
 
-        let first_log_y = margin + line_height * 4;
-        let available_rows = self.info.height.saturating_sub(first_log_y + margin) / line_height;
-        let visible_rows = (available_rows.max(1) as usize).min(logs.len());
-
-        for index in 0..logs.len() {
-            self.rectangle(
-                0,
-                first_log_y,
-                self.info.width,
-                self.info.height.saturating_sub(first_log_y),
-                background,
-            );
-            let first = (index + 1).saturating_sub(visible_rows);
-            for row in first..=index {
-                let row_y = first_log_y + (row - first) as u64 * line_height;
-                self.text(margin, row_y, logs[row].0, scale, logs[row].1);
+        for (index, (line, colour)) in lines.iter().enumerate() {
+            let y = margin + index as u64 * line_height;
+            if y + 8 * scale > self.info.height {
+                break;
             }
-
-            for _ in 0..3_000_000 {
-                core::hint::spin_loop();
-            }
-        }
-
-        let cursor_y = first_log_y + (visible_rows as u64 + 1) * line_height;
-        if cursor_y + line_height < self.info.height {
-            self.rectangle(margin, cursor_y, 8 * scale, 2 * scale, white);
+            self.text(margin, y, line, scale, *colour);
         }
     }
 }
