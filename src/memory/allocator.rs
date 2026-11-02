@@ -41,7 +41,7 @@ impl PhysicalFrameAllocator {
         }
 
         let mut run_start = 0;
-        let mut previous = 0;
+        let mut previous = 0_u64;
         let mut run_length = 0_usize;
 
         for frame in self.frames.by_ref() {
