@@ -29,12 +29,15 @@ The goal is a capable, maintainable general-purpose operating system with its ow
 - Usable 4 KiB physical-frame iterator
 - Initial monotonic physical-frame allocator
 - 256-entry x86_64 interrupt descriptor table with dedicated diagnostic stubs for CPU exceptions 0–31 and an emergency handler for other vectors
-- CPUID-based processor vendor and capability discovery (SSE2, APIC, x2APIC, NX, large pages, SYSCALL, long mode)\n- COM1 serial output for early diagnostics
+- CPUID-based processor vendor and capability discovery (SSE2, APIC, x2APIC, NX, large pages, SYSCALL, long mode)
+- Limine framebuffer discovery and an early RGB pixel/text renderer
+- Four-level page-table walker for 4 KiB, 2 MiB, and 1 GiB mappings
+- COM1 serial output for early diagnostics
 - Kernel panic handler and CPU halt routine
 - Linker script and boot configuration
 - Automated formatting, compilation, and QEMU boot smoke tests with GitHub Actions
 
-The current milestone adds a direct RGB framebuffer renderer for the Sestina startup screen. The next development milestones cover page-table management, interrupt-controller setup, and the kernel heap. The QEMU smoke test builds a bootable Limine ISO and checks that the kernel reaches its startup milestone.
+Milestone 0.8 adds a direct RGB framebuffer renderer for the Sestina startup screen and inspection of the active four-level page tables. The next milestones cover page-table creation and management, interrupt-controller setup, and the kernel heap. The QEMU smoke test builds a bootable Limine ISO and checks that the kernel reaches its startup milestone.
 
 ## Build
 
