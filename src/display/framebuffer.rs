@@ -31,8 +31,16 @@ impl Display {
 
     fn colour_value(&self, colour: Colour) -> u32 {
         channel(colour.0, self.info.red_mask_size, self.info.red_mask_shift)
-            | channel(colour.1, self.info.green_mask_size, self.info.green_mask_shift)
-            | channel(colour.2, self.info.blue_mask_size, self.info.blue_mask_shift)
+            | channel(
+                colour.1,
+                self.info.green_mask_size,
+                self.info.green_mask_shift,
+            )
+            | channel(
+                colour.2,
+                self.info.blue_mask_size,
+                self.info.blue_mask_shift,
+            )
     }
 
     fn pixel(&mut self, x: u64, y: u64, colour: Colour) {
@@ -126,13 +134,7 @@ impl Display {
         let status_x = margin + 18 * scale;
         let status_y = panel_y + 17 * scale;
         self.text(status_x, status_y, "KERNEL INITIALISED", scale, white);
-        self.text(
-            status_x,
-            status_y + line_gap,
-            "CPU: X86_64",
-            scale,
-            green,
-        );
+        self.text(status_x, status_y + line_gap, "CPU: X86_64", scale, green);
         self.text(
             status_x,
             status_y + line_gap * 2,
