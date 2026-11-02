@@ -1,8 +1,8 @@
-# Kernel
+# Sestina
 
-A from-scratch operating-system kernel for x86_64, written primarily in Rust.
+Sestina is a from-scratch operating-system kernel for x86_64, written primarily in Rust.
 
-Kernel is built as a freestanding, `no_std` binary and uses Limine for boot. The project is organised around a small core with clearly separated architecture-specific code and kernel subsystems.
+Sestina is built as a freestanding, `no_std` binary and uses Limine for boot. The project is organised around a small core with clearly separated architecture-specific code and kernel subsystems.
 
 ## Project direction
 
@@ -34,7 +34,7 @@ The goal is a capable, maintainable general-purpose operating system with its ow
 - Linker script and boot configuration
 - Automated formatting, compilation, and QEMU boot smoke tests with GitHub Actions
 
-The next development milestones cover virtual memory, interrupt-controller setup, and the kernel heap. The QEMU smoke test builds a bootable Limine ISO and checks that the kernel reaches its startup milestone.
+The current milestone adds a direct RGB framebuffer renderer for the Sestina startup screen. The next development milestones cover page-table management, interrupt-controller setup, and the kernel heap. The QEMU smoke test builds a bootable Limine ISO and checks that the kernel reaches its startup milestone.
 
 ## Build
 
@@ -60,7 +60,8 @@ For the complete ISO and QEMU workflow, see [docs/BUILDING.md](docs/BUILDING.md)
 .github/workflows/      Continuous integration
 docs/                   Build and architecture documentation
 src/arch/x86_64/        x86_64-specific kernel code
-src/main.rs             Kernel entry point and early serial console
+src/main.rs             Kernel entry point and early console setup
+src/display/             Framebuffer and early display code
 Cargo.toml              Kernel package and build profiles
 linker.ld               Kernel linker layout
 limine.conf             Limine boot configuration
