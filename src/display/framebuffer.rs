@@ -19,6 +19,8 @@ impl Display {
             || info.bpp != 32
             || info.memory_model != RGB_MEMORY_MODEL
             || info.pitch < info.width.checked_mul(4)?
+            || info.pitch > 65_536
+            || info.pitch % 4 != 0
             || !valid_mask(info.red_mask_size, info.red_mask_shift)
             || !valid_mask(info.green_mask_size, info.green_mask_shift)
             || !valid_mask(info.blue_mask_size, info.blue_mask_shift)
