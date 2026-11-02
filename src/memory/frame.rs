@@ -38,7 +38,7 @@ impl Iterator for UsableFrameIter {
         loop {
             if let Some((next_address, end_address)) = self.current {
                 if next_address < end_address {
-                    self.current = Some((next_address + PAGE_SIZE, end_address));
+                    self.current = Some((next_address.saturating_add(PAGE_SIZE), end_address));
                     return Some(PhysFrame {
                         start_address: next_address,
                     });
