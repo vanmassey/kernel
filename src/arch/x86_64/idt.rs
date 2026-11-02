@@ -95,6 +95,13 @@ global_asm!(
     "ISR_ERR 29",
     "ISR_ERR 30",
     "ISR_NOERR 31",
+    ".global x86_exception_halt_stub",
+    ".type x86_exception_halt_stub, @function",
+    "x86_exception_halt_stub:",
+    "cli",
+    "2:",
+    "hlt",
+    "jmp 2b",
     "x86_exception_common:",
     "cld",
     "mov rdi, [rsp]",
@@ -132,7 +139,7 @@ extern "C" {
 /// Call during single-core early boot with maskable interrupts disabled. The
 /// kernel must remain in the same code segment while this IDT is active.
 pub unsafe fn initialize() {
-    let emergency_handler = x86_exception_halt_stub as usize as u64;
+    let emergency_handler = x86_exception_halt_stub as *const () as usize as u64;
     let selector: u16;
 
     // SAFETY: Reading CS obtains the active code-segment selector for IDT gates.
