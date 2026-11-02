@@ -42,6 +42,7 @@ jobs:
           tar -xzf /tmp/limine-binary.tar.gz -C limine
           limine_dir="$(dirname "$(find limine -type f -name limine-bios.sys -print -quit)")"
           test -n "$limine_dir"
+          make -C "$limine_dir"
           test -x "$limine_dir/limine"
           echo "LIMINE_DIR=$limine_dir" >> "$GITHUB_ENV"
       - name: Build ISO and boot in QEMU
