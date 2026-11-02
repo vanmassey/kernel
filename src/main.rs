@@ -107,6 +107,14 @@ pub extern "C" fn _start() -> ! {
     let _ = writeln!(serial, "[cpu] IDT installed (256 gates)");
     let _ = writeln!(serial, "[cpu] Exception diagnostics enabled (vectors 0-31)");
 
+    let cpu = arch::x86_64::cpu::detect();
+    let vendor = core::str::from_utf8(&cpu.vendor).unwrap_or("unknown");
+    let _ = writeln!(serial, "[cpu] Vendor: {}", vendor);
+    let _ = writeln!(serial, "[cpu] CPUID basic leaf: {:#x}", cpu.max_basic_leaf);
+    let _ = writeln!(serial, "[cpu] CPUID extended leaf: {:#x}", cpu.max_extended_leaf);
+    let _ = writeln!(serial, "[cpu] SSE2: {}, APIC: {}, x2APIC: {}", cpu.has_sse2, cpu.has_apic, cpu.has_x2apic);
+    let _ = writeln!(serial, "[cpu] NX: {}, 1 GiB pages: {}, SYSCALL: {}, long mode: {}", cpu.has_nx, cpu.has_1gib_pages, cpu.has_syscall, cpu.has_long_mode);
+
     // SAFETY: Limine populated the memory-map response before transferring control.
     if let Some(memory_map) = unsafe { boot::limine::memory_map_summary() } {
         let usable_mib = memory_map.usable_bytes / (1024 * 1024);
@@ -142,8 +150,8 @@ pub extern "C" fn _start() -> ! {
         unsafe { core::arch::asm!("int3", options(nomem, nostack)) };
     }
 
-    let _ = writeln!(serial, "[boot] Milestone 0.5: per-exception diagnostics");
-    let _ = writeln!(serial, "[boot] CPU halted; next: CPU feature discovery");
+    let _ = writeln!(serial, "[boot] Milestone 0.6: CPU feature discovery");
+    let _ = writeln!(serial, "[boot] CPU halted; next: virtual memory");
     halt()
 }
 
