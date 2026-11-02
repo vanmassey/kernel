@@ -165,7 +165,10 @@ pub extern "C" fn _start() -> ! {
                         );
                     }
                     None => {
-                        let _ = writeln!(serial, "[memory] Physical address is not canonical through HHDM");
+                        let _ = writeln!(
+                            serial,
+                            "[memory] Physical address is not canonical through HHDM"
+                        );
                     }
                 }
             }
