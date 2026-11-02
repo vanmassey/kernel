@@ -134,6 +134,14 @@ pub extern "C" fn _start() -> ! {
         let _ = writeln!(serial, "[memory] Physical frame allocator unavailable");
     }
 
+    #[cfg(feature = "exception-test")]
+    {
+        let _ = writeln!(serial, "[test] Triggering controlled breakpoint exception");
+        // SAFETY: The exception-test feature deliberately invokes vector 3; the
+        // installed handler reports the exception and halts without returning.
+        unsafe { core::arch::asm!("int3", options(nomem, nostack)) };
+    }
+
     let _ = writeln!(serial, "[boot] Milestone 0.5: per-exception diagnostics");
     let _ = writeln!(serial, "[boot] CPU halted; next: CPU feature discovery");
     halt()
@@ -148,7 +156,7 @@ pub extern "C" fn kernel_exception_handler(
     let mut serial = SerialPort;
     let _ = writeln!(
         serial,
-        "\\n[CPU EXCEPTION] {} (vector {})",
+        "\n[CPU EXCEPTION] {} (vector {})",
         exception_name(vector),
         vector
     );
