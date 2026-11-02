@@ -128,7 +128,10 @@ pub extern "C" fn _start() -> ! {
         let _ = writeln!(serial, "[memory] Physical frame allocator unavailable");
     }
 
-    let _ = writeln!(serial, "[boot] Milestone 0.3: initial physical frame allocator");
+    let _ = writeln!(
+        serial,
+        "[boot] Milestone 0.3: initial physical frame allocator"
+    );
     let _ = writeln!(serial, "[boot] CPU halted; next: CPU exceptions and IDT");
     halt()
 }
