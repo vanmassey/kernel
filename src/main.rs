@@ -6,6 +6,7 @@ use core::panic::PanicInfo;
 
 mod arch;
 mod boot;
+mod display;
 mod memory;
 
 #[used]
@@ -96,7 +97,7 @@ pub extern "C" fn _start() -> ! {
     let mut serial = SerialPort;
     let _ = writeln!(serial, "");
     let _ = writeln!(serial, "========================================");
-    let _ = writeln!(serial, "  KERNEL :: x86_64 Rust kernel");
+    let _ = writeln!(serial, "  SESTINA :: x86_64 kernel");
     let _ = writeln!(serial, "========================================");
     let _ = writeln!(serial, "[boot] Entered kernel entry point");
     let _ = writeln!(serial, "[boot] COM1 serial console initialised");
@@ -187,35 +188,17 @@ pub extern "C" fn _start() -> ! {
         unsafe { core::arch::asm!("int3", options(nomem, nostack)) };
     }
 
-    let _ = writeln!(serial, "[boot] Milestone 0.7: HHDM address conversion");
-    let _ = writeln!(serial, "[boot] CPU halted; next: page-table management");
+    let _ = writeln!(serial, "[boot] Milestone 0.8: framebuffer display");
+    let _ = writeln!(serial, "[boot] Display initialisation complete; CPU halted");
 
-    // SAFETY: Limine terminal output is available only during the bootloader-provided session.
-    let display_ready = unsafe {
-        boot::limine::write_terminal(concat!(
-            "\x1b[2J\x1b[H\x1b[1;36mKERNEL OS\x1b[0m\r\n\r\n",
-            "Kernel initialisation complete\r\n",
-            "[ OK ] Limine boot protocol\r\n",
-            "[ OK ] CPU identification\r\n",
-            "[ OK ] Interrupt descriptor table\r\n",
-            "[ OK ] Physical memory discovery\r\n",
-            "[ OK ] Physical frame allocator\r\n",
-            "[ OK ] Higher-half direct map\r\n\r\n",
-            "Architecture: x86_64\r\n",
-            "Kernel milestone: 0.7\r\n\r\n",
-            "System initialised.\r\n",
-            "CPU halted - page-table management is next.\r\n"
-        ))
-    };
-    let _ = writeln!(
-        serial,
-        "[display] Limine terminal: {}",
-        if display_ready {
-            "available"
-        } else {
-            "unavailable"
+    match display::framebuffer::draw_boot_screen() {
+        Some((width, height)) => {
+            let _ = writeln!(serial, "[display] Framebuffer online: {}x{} RGB", width, height);
         }
-    );
+        None => {
+            let _ = writeln!(serial, "[display] No supported Limine RGB framebuffer");
+        }
+    }
     halt()
 }
 
