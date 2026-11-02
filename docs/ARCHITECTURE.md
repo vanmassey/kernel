@@ -9,7 +9,7 @@ The kernel is monolithic with modular internal subsystems. Rust is the primary l
 1. Boot protocol and early diagnostics
 2. Limine boot information and physical memory-map discovery
 3. Usable physical-frame iteration and reservation
-4. Physical frame allocator
+4. Initial monotonic physical frame allocator
 5. CPU feature discovery and descriptor tables
 6. Virtual memory and kernel address-space layout
 7. Interrupt descriptor table and exception handlers
@@ -29,6 +29,6 @@ The kernel is monolithic with modular internal subsystems. Rust is the primary l
 - Keep architecture-specific code behind narrow interfaces.
 - Add tests for pure logic and QEMU smoke tests for boot- and hardware-dependent behaviour.
 
-## Current limitations
+## Current implementation
 
-The kernel requests the Limine physical memory map, reports the number of entries and total usable memory over the legacy COM1 UART, and provides an iterator over usable 4 KiB physical frames. Frame reservation and allocation, interrupt handling, scheduling, userspace, filesystems, and the device model are the next major subsystems.
+The kernel requests the Limine physical memory map, reports the number of entries and total usable memory over the legacy COM1 UART, and provides an iterator over usable 4 KiB physical frames. The initial physical-frame allocator consumes that iterator and returns each candidate frame at most once. It does not yet reclaim frames or create virtual mappings; those responsibilities belong to later memory-management stages.
