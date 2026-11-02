@@ -104,7 +104,8 @@ pub extern "C" fn _start() -> ! {
 
     // SAFETY: Early startup is single-core and maskable interrupts remain disabled.
     unsafe { arch::x86_64::idt::initialize() };
-    let _ = writeln!(serial, "[cpu] Emergency IDT installed (256 gates)");
+    let _ = writeln!(serial, "[cpu] IDT installed (256 gates)");
+    let _ = writeln!(serial, "[cpu] Exception diagnostics enabled (vectors 0-31)");
 
     // SAFETY: Limine populated the memory-map response before transferring control.
     if let Some(memory_map) = unsafe { boot::limine::memory_map_summary() } {
@@ -135,10 +136,64 @@ pub extern "C" fn _start() -> ! {
 
     let _ = writeln!(
         serial,
-        "[boot] Milestone 0.4: emergency interrupt descriptor table"
+        "[boot] Milestone 0.5: per-exception diagnostics"
     );
-    let _ = writeln!(serial, "[boot] CPU halted; next: per-exception diagnostics");
+    let _ = writeln!(serial, "[boot] CPU halted; next: CPU feature discovery");
     halt()
+}
+
+#[no_mangle]
+pub extern "C" fn kernel_exception_handler(
+    vector: u64,
+    error_code: u64,
+    instruction_pointer: u64,
+) -> ! {
+    let mut serial = SerialPort;
+    let _ = writeln!(
+        serial,
+        "\\n[CPU EXCEPTION] {} (vector {})",
+        exception_name(vector),
+        vector
+    );
+    let _ = writeln!(serial, "[exception] Error code: {:#018x}", error_code);
+    let _ = writeln!(
+        serial,
+        "[exception] Instruction pointer: {:#018x}",
+        instruction_pointer
+    );
+    halt()
+}
+
+fn exception_name(vector: u64) -> &'static str {
+    match vector {
+        0 => "Divide Error",
+        1 => "Debug",
+        2 => "Non-Maskable Interrupt",
+        3 => "Breakpoint",
+        4 => "Overflow",
+        5 => "Bound Range Exceeded",
+        6 => "Invalid Opcode",
+        7 => "Device Not Available",
+        8 => "Double Fault",
+        9 => "Coprocessor Segment Overrun",
+        10 => "Invalid TSS",
+        11 => "Segment Not Present",
+        12 => "Stack-Segment Fault",
+        13 => "General Protection Fault",
+        14 => "Page Fault",
+        15 => "Reserved",
+        16 => "x87 Floating-Point Exception",
+        17 => "Alignment Check",
+        18 => "Machine Check",
+        19 => "SIMD Floating-Point Exception",
+        20 => "Virtualisation Exception",
+        21 => "Control Protection Exception",
+        22..=28 => "Reserved",
+        29 => "VMM Communication Exception",
+        30 => "Security Exception",
+        31 => "Reserved",
+        _ => "Unknown Exception",
+    }
 }
 
 #[panic_handler]
