@@ -47,7 +47,7 @@ boot-test: iso
 	@echo "QEMU boot smoke test passed."
 
 exception-test: iso
-	@set +e; timeout 5s qemu-system-x86_64 -M q35 -m 256M -cdrom build/kernel.iso -boot order=d -serial stdio -display none -no-reboot -no-shutdown > build/qemu-exception.log 2>&1; status=$?; set -e; if [ $status -ne 124 ] && [ $status -ne 0 ]; then cat build/qemu-exception.log; exit $status; fi
+	@set +e; timeout 5s qemu-system-x86_64 -M q35 -m 256M -cdrom build/kernel.iso -boot order=d -serial stdio -display none -no-reboot -no-shutdown > build/qemu-exception.log 2>&1; status=$$?; set -e; if [ $$status -ne 124 ] && [ $$status -ne 0 ]; then cat build/qemu-exception.log; exit $$status; fi
 	@echo "--- QEMU exception-test serial output ---"; cat build/qemu-exception.log
 	@grep -F "[CPU EXCEPTION] Breakpoint (vector 3)" build/qemu-exception.log
 	@grep -F "[exception] Error code:" build/qemu-exception.log
