@@ -25,14 +25,23 @@ impl BumpAllocator {
         let Some(end) = start.checked_add(size) else {
             return false;
         };
-        if start == 0 || size == 0 || self.next.load(Ordering::Acquire) != 0 {
+        if start == 0 || size == 0 {
+            return false;
+        }
+
+        // Claim initialisation before publishing the heap bounds. The sentinel
+        // prevents a second initialisation from changing a live allocator.
+        if self
+            .next
+            .compare_exchange(0, usize::MAX, Ordering::AcqRel, Ordering::Acquire)
+            .is_err()
+        {
             return false;
         }
 
         self.end.store(end, Ordering::Relaxed);
-        self.next
-            .compare_exchange(0, start, Ordering::Release, Ordering::Relaxed)
-            .is_ok()
+        self.next.store(start, Ordering::Release);
+        true
     }
 }
 
@@ -45,7 +54,7 @@ unsafe impl GlobalAlloc for BumpAllocator {
             return alignment as *mut u8;
         }
 
-        let mut current = self.next.load(Ordering::Relaxed);
+        let mut current = self.next.load(Ordering::Acquire);
         loop {
             if current == 0 {
                 return ptr::null_mut();
