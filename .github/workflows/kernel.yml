@@ -18,7 +18,7 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
       - name: Build freestanding kernel
-        run: cargo build -Z build-std=core,compiler_builtins
+        run: cargo build -Z build-std=core,alloc,compiler_builtins
 
   boot-smoke:
     runs-on: ubuntu-latest
