@@ -102,157 +102,80 @@ impl Display {
     }
 
     fn draw_boot_screen(&mut self) {
-        let background = Colour(7, 12, 20);
-        let panel = Colour(13, 23, 35);
-        let panel_edge = Colour(31, 54, 72);
-        let white = Colour(225, 237, 245);
-        let muted = Colour(116, 143, 163);
-        let cyan = Colour(75, 205, 222);
-        let green = Colour(105, 220, 151);
-        let amber = Colour(231, 177, 91);
-        let red = Colour(226, 105, 105);
+        let background = Colour(0, 0, 0);
+        let white = Colour(210, 210, 210);
+        let muted = Colour(145, 145, 145);
+        let green = Colour(120, 205, 120);
+        let amber = Colour(220, 190, 110);
         let scale = if self.info.width >= 1000 && self.info.height >= 600 {
             2
         } else {
             1
         };
         let margin = 24 * scale;
+        let line_height = 18 * scale;
 
         self.rectangle(0, 0, self.info.width, self.info.height, background);
-        self.rectangle(0, 0, self.info.width, 36 * scale, panel);
-        self.rectangle(0, 0, self.info.width, 3 * scale, cyan);
-        self.text(margin, 12 * scale, "SESTINA OPERATING SYSTEM", scale, cyan);
+        self.text(margin, margin, "Sestina 0.12", scale, white);
         self.text(
-            self.info.width.saturating_sub(210 * scale),
-            12 * scale,
-            "KERNEL 0.12  |  X86_64",
+            margin,
+            margin + line_height * 2,
+            "Booting Sestina...",
             scale,
             muted,
         );
 
-        let logo_x = margin + 4 * scale;
-        let logo_y = 52 * scale;
-        let logo = [
-            "  _____ _____ ____ _____ ___ _   _   _ ",
-            " / ____| ____/ ___|_   _|_ _| \\ | |",
-            " \\___ \\|  _| \\___ \\ | |  | ||  \\| |",
-            " |___) | |___ ___) || |  | || |\\  |",
-            " |____/|_____|____/ |_| |___|_| \\_|",
+        let logs: [(&str, Colour); 17] = [
+            ("Limine boot protocol detected", green),
+            ("Kernel entry point reached", green),
+            ("Serial console initialised", green),
+            ("Interrupt descriptor table installed", green),
+            ("Processor identification complete", green),
+            ("CPU features detected", green),
+            ("Physical memory map read", green),
+            ("Higher-half direct map active", green),
+            ("Physical frame allocator initialised", green),
+            ("Kernel heap initialised", green),
+            ("Heap allocator self-test passed", green),
+            ("Rust Vec allocation test passed", green),
+            ("Framebuffer detected", green),
+            ("Kernel address space active", green),
+            ("4 KiB page mapping test passed", green),
+            ("Exception handlers installed", green),
+            ("Kernel initialisation complete", amber),
         ];
-        for (index, line) in logo.iter().enumerate() {
-            self.text(
-                logo_x,
-                logo_y + index as u64 * 10 * scale,
-                line,
-                scale,
-                if index == 0 { white } else { cyan },
-            );
-        }
-        let panel_y = logo_y + 68 * scale;
-        let panel_height = self
+
+        let first_log_y = margin + line_height * 4;
+        let available_rows = self
             .info
             .height
-            .saturating_sub(panel_y + margin + 26 * scale);
-        let panel_width = self.info.width.saturating_sub(margin * 2);
-        self.rectangle(margin, panel_y, panel_width, panel_height, panel);
-        self.rectangle(margin, panel_y, panel_width, 2 * scale, panel_edge);
-        self.text(
-            margin + 14 * scale,
-            panel_y + 12 * scale,
-            "KERNEL INITIALISATION SUMMARY",
-            scale,
-            amber,
-        );
-        self.text(
-            self.info.width.saturating_sub(margin + 110 * scale),
-            panel_y + 12 * scale,
-            "STATUS: COMPLETE",
-            scale,
-            green,
-        );
+            .saturating_sub(first_log_y + margin)
+            / line_height;
+        let visible_rows = (available_rows.max(1) as usize).min(logs.len());
 
-        let log_x = margin + 16 * scale;
-        let log_y = panel_y + 38 * scale;
-        let line_height = 13 * scale;
-        let footer_space = 42 * scale;
-        let available_height = panel_height.saturating_sub(38 * scale + footer_space);
-        let visible_rows = (available_height / line_height).max(1) as usize;
-        let logs: [(&str, Colour); 19] = [
-            ("LIMINE BOOT PROTOCOL ............. OK", green),
-            ("KERNEL ENTRY POINT ............... OK", green),
-            ("COM1 SERIAL CONSOLE .............. OK", green),
-            ("INTERRUPT DESCRIPTOR TABLE ....... OK", green),
-            ("CPU IDENTIFICATION ............... OK", green),
-            ("CPU FEATURES ..................... DETECTED", green),
-            ("PHYSICAL MEMORY MAP .............. READ", green),
-            ("HIGHER-HALF DIRECT MAP ........... ACTIVE", green),
-            ("PHYSICAL FRAME ALLOCATOR ......... READY", green),
-            ("KERNEL HEAP ...................... READY", green),
-            ("HEAP ALLOCATOR SELF-TEST ......... PASSED", green),
-            ("RUST VEC ALLOCATION TEST ......... PASSED", green),
-            ("FRAMEBUFFER ...................... AVAILABLE", green),
-            ("KERNEL ADDRESS SPACE ............. ACTIVE", green),
-            ("INITIAL 4K PAGE MAPPING .......... PASSED", green),
-            ("GENERAL 4K PAGE MAPPER ........... PASSED", green),
-            ("EXCEPTION HANDLERS ............... INSTALLED", green),
-            ("KERNEL MILESTONE ................. 0.12", amber),
-            ("KERNEL INITIALISATION ............ COMPLETE", white),
-        ];
-
-        let log_area_height = visible_rows as u64 * line_height;
         for index in 0..logs.len() {
             self.rectangle(
-                margin + 8 * scale,
-                log_y,
-                panel_width.saturating_sub(16 * scale),
-                log_area_height,
-                panel,
+                0,
+                first_log_y,
+                self.info.width,
+                self.info.height.saturating_sub(first_log_y),
+                background,
             );
             let first = (index + 1).saturating_sub(visible_rows);
             for row in first..=index {
-                let row_y = log_y + (row - first) as u64 * line_height;
-                self.text(log_x, row_y, ">", scale, cyan);
-                self.text(log_x + 12 * scale, row_y, logs[row].0, scale, logs[row].1);
+                let row_y = first_log_y + (row - first) as u64 * line_height;
+                self.text(margin, row_y, logs[row].0, scale, logs[row].1);
             }
-
-            let progress_width = panel_width.saturating_sub(36 * scale);
-            let progress_y = panel_y + panel_height.saturating_sub(24 * scale);
-            self.rectangle(
-                margin + 18 * scale,
-                progress_y,
-                progress_width,
-                5 * scale,
-                panel_edge,
-            );
-            let filled = progress_width.saturating_mul((index + 1) as u64) / logs.len() as u64;
-            self.rectangle(
-                margin + 18 * scale,
-                progress_y,
-                filled,
-                5 * scale,
-                if index + 1 == logs.len() { green } else { cyan },
-            );
 
             for _ in 0..3_000_000 {
                 core::hint::spin_loop();
             }
         }
 
-        let footer_y = self.info.height.saturating_sub(18 * scale);
-        self.text(
-            margin,
-            footer_y,
-            "SESTINA KERNEL // X86_64",
-            scale,
-            muted,
-        );
-        self.text(
-            self.info.width.saturating_sub(margin + 66 * scale),
-            footer_y,
-            "READY",
-            scale,
-            green,
-        );
+        let cursor_y = first_log_y + (visible_rows as u64 + 1) * line_height;
+        if cursor_y + line_height < self.info.height {
+            self.rectangle(margin, cursor_y, 8 * scale, 2 * scale, white);
+        }
     }
 }
 
