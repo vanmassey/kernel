@@ -188,9 +188,6 @@ pub extern "C" fn _start() -> ! {
         unsafe { core::arch::asm!("int3", options(nomem, nostack)) };
     }
 
-    let _ = writeln!(serial, "[boot] Milestone 0.8: framebuffer display");
-    let _ = writeln!(serial, "[boot] Display initialisation complete; CPU halted");
-
     if let Some(offset) = direct_map_offset {
         let kernel_address = _start as usize as u64;
         // SAFETY: The kernel runs in ring 0 with Limine's HHDM and active four-level tables.
@@ -220,6 +217,8 @@ pub extern "C" fn _start() -> ! {
             let _ = writeln!(serial, "[display] No supported Limine RGB framebuffer");
         }
     }
+    let _ = writeln!(serial, "[boot] Milestone 0.8: framebuffer and paging inspection");
+    let _ = writeln!(serial, "[boot] Display initialisation complete; CPU halted");
     halt()
 }
 
