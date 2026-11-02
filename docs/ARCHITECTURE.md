@@ -16,12 +16,13 @@ The kernel is monolithic with modular internal subsystems. Rust is the primary l
 8. Active page-table inspection and virtual-address translation
 9. Early kernel heap over the Limine HHDM
 10. Managed page-table creation and kernel address-space layout
-11. Interrupt-controller setup and timer
-12. Scheduler and task model
-13. System-call boundary and user mode
-14. VFS and initial in-memory filesystem
-15. Device-driver framework
-16. Storage, networking, and userspace
+11. Rust `alloc` integration and allocation failure handling
+12. Interrupt-controller setup and timer
+13. Scheduler and task model
+14. System-call boundary and user mode
+15. VFS and initial in-memory filesystem
+16. Device-driver framework
+17. Storage, networking, and userspace
 
 ## Safety rules
 
@@ -33,4 +34,4 @@ The kernel is monolithic with modular internal subsystems. Rust is the primary l
 
 ## Current implementation
 
-The kernel requests the Limine physical memory map, reports the number of entries and total usable memory over the legacy COM1 UART, and provides an iterator over usable 4 KiB physical frames. The initial physical-frame allocator consumes that iterator and returns each candidate frame at most once. The x86_64 architecture layer also installs a 256-entry IDT; vectors 0–31 have dedicated assembly stubs that report the exception name, vector, error code, and instruction pointer over COM1 before halting. Other vectors still use the emergency halt stub; hardware interrupts are not yet handled. CPUID discovery reports the processor vendor, supported basic and extended leaves, and selected capabilities (SSE2, APIC, x2APIC, NX, 1 GiB pages, SYSCALL, and long mode). Physical frames are not yet reclaimed or mapped into virtual memory. The kernel now requests a Limine RGB framebuffer and draws a small Sestina startup screen directly into 32-bit framebuffer memory. A four-level page-table walker reads the active CR3 hierarchy and translates canonical virtual addresses through 4 KiB, 2 MiB, and 1 GiB mappings; it rejects five-level paging rather than misinterpreting it. The renderer validates dimensions, pitch, pixel format, and colour masks before writing pixels; serial output remains the diagnostic fallback. The kernel also reserves a contiguous 256 KiB region from usable physical frames and exposes it through an early aligned atomic bump allocator. Its startup self-test verifies alignment and read/write integrity. The heap does not yet reclaim freed allocations.
+The kernel requests the Limine physical memory map, reports the number of entries and total usable memory over the legacy COM1 UART, and provides an iterator over usable 4 KiB physical frames. The initial physical-frame allocator consumes that iterator and returns each candidate frame at most once. The x86_64 architecture layer also installs a 256-entry IDT; vectors 0–31 have dedicated assembly stubs that report the exception name, vector, error code, and instruction pointer over COM1 before halting. Other vectors still use the emergency halt stub; hardware interrupts are not yet handled. CPUID discovery reports the processor vendor, supported basic and extended leaves, and selected capabilities (SSE2, APIC, x2APIC, NX, 1 GiB pages, SYSCALL, and long mode). Physical frames are not yet reclaimed or mapped into virtual memory. The kernel now requests a Limine RGB framebuffer and draws a small Sestina startup screen directly into 32-bit framebuffer memory. A four-level page-table walker reads the active CR3 hierarchy and translates canonical virtual addresses through 4 KiB, 2 MiB, and 1 GiB mappings; it rejects five-level paging rather than misinterpreting it. The renderer validates dimensions, pitch, pixel format, and colour masks before writing pixels; serial output remains the diagnostic fallback. The kernel also reserves a contiguous 256 KiB region from usable physical frames and exposes it through an early aligned atomic bump allocator. Its startup self-test verifies alignment and read/write integrity. The heap does not yet reclaim freed allocations. Rust's `alloc` crate is now linked against this heap, with an allocation-error handler and a boot-time `Vec` self-test.
