@@ -218,7 +218,11 @@ pub extern "C" fn _start() -> ! {
                         let _ = writeln!(
                             serial,
                             "[memory] Rust Vec self-test: {}",
-                            if heap_vec_self_test() { "passed" } else { "FAILED" }
+                            if heap_vec_self_test() {
+                                "passed"
+                            } else {
+                                "FAILED"
+                            }
                         );
                     } else {
                         let _ = writeln!(serial, "[memory] Kernel heap initialisation failed");
@@ -279,10 +283,7 @@ pub extern "C" fn _start() -> ! {
             let _ = writeln!(serial, "[display] No supported Limine RGB framebuffer");
         }
     }
-    let _ = writeln!(
-        serial,
-        "[boot] Milestone 0.10: Rust allocation support"
-    );
+    let _ = writeln!(serial, "[boot] Milestone 0.10: Rust allocation support");
     let _ = writeln!(serial, "[boot] Display initialisation complete; CPU halted");
     halt()
 }
