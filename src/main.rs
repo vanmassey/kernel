@@ -261,11 +261,7 @@ pub extern "C" fn _start() -> ! {
                     let _ = writeln!(
                         serial,
                         "[memory] General 4 KiB mapper self-test: {}",
-                        if additional_page_mapping_self_test(
-                            &mut allocator,
-                            offset,
-                            second_virtual
-                        ) {
+                        if additional_page_mapping_self_test(&mut allocator, offset, second_virtual) {
                             "passed"
                         } else {
                             "FAILED"
@@ -352,12 +348,7 @@ fn additional_page_mapping_self_test(
     // SAFETY: Early boot is single-core, ring 0, and the supplied allocator exclusively
     // owns its frames; the active kernel page tables and HHDM are valid.
     if unsafe {
-        memory::paging::map_4k_current(
-            allocator,
-            hhdm_offset,
-            virtual_address,
-            frame.start_address,
-        )
+        memory::paging::map_4k_current(allocator, hhdm_offset, virtual_address, frame.start_address)
     }
     .is_err()
     {
@@ -372,9 +363,7 @@ fn additional_page_mapping_self_test(
     // SAFETY: The virtual address and HHDM address alias the same reserved physical frame.
     let mapped = unsafe { core::ptr::read_volatile(virtual_address as *const u64) };
     // SAFETY: The direct-map address was validated above and refers to the same frame.
-    let direct = unsafe {
-        core::ptr::read_volatile(direct_address.as_u64() as *const u64)
-    };
+    let direct = unsafe { core::ptr::read_volatile(direct_address.as_u64() as *const u64) };
     mapped == PATTERN && direct == PATTERN
 }
 

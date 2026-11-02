@@ -158,8 +158,8 @@ unsafe fn table_pointer(physical_address: u64, hhdm_offset: u64) -> Result<*mut 
     if physical_address & (PAGE_4K - 1) != 0 || physical_address & !ADDRESS_MASK != 0 {
         return Err(MapError::InvalidPageTableAddress);
     }
-    let virtual_address =
-        physical_to_virtual(physical_address, hhdm_offset).ok_or(MapError::InvalidPageTableAddress)?;
+    let virtual_address = physical_to_virtual(physical_address, hhdm_offset)
+        .ok_or(MapError::InvalidPageTableAddress)?;
     Ok(virtual_address.as_u64() as *mut u64)
 }
 
@@ -186,8 +186,8 @@ unsafe fn ensure_next_table(
     }
 
     // SAFETY: The allocator returns a fresh usable frame, which is zeroed through the HHDM.
-    let (frame, _) = unsafe { allocate_zeroed_table(allocator, hhdm_offset) }
-        .ok_or(MapError::OutOfMemory)?;
+    let (frame, _) =
+        unsafe { allocate_zeroed_table(allocator, hhdm_offset) }.ok_or(MapError::OutOfMemory)?;
     // SAFETY: The parent entry is within a valid table and the new frame is reserved.
     unsafe {
         ptr::write_volatile(
@@ -250,18 +250,15 @@ pub unsafe fn map_4k_current(
     let pt_index = ((virtual_address >> 12) & 0x1ff) as usize;
 
     // SAFETY: Each table pointer is derived from a present entry or a freshly allocated frame.
-    let pdpt_physical =
-        unsafe { ensure_next_table(root, pml4_index, allocator, hhdm_offset)? };
+    let pdpt_physical = unsafe { ensure_next_table(root, pml4_index, allocator, hhdm_offset)? };
     // SAFETY: The returned physical address identifies a valid page-table page.
     let pdpt = unsafe { table_pointer(pdpt_physical, hhdm_offset)? };
     // SAFETY: The index is in range and the parent table is valid.
-    let pd_physical =
-        unsafe { ensure_next_table(pdpt, pdpt_index, allocator, hhdm_offset)? };
+    let pd_physical = unsafe { ensure_next_table(pdpt, pdpt_index, allocator, hhdm_offset)? };
     // SAFETY: The returned physical address identifies a valid page-table page.
     let pd = unsafe { table_pointer(pd_physical, hhdm_offset)? };
     // SAFETY: The index is in range and the parent table is valid.
-    let pt_physical =
-        unsafe { ensure_next_table(pd, pd_index, allocator, hhdm_offset)? };
+    let pt_physical = unsafe { ensure_next_table(pd, pd_index, allocator, hhdm_offset)? };
     // SAFETY: The returned physical address identifies a valid page-table page.
     let pt = unsafe { table_pointer(pt_physical, hhdm_offset)? };
 
@@ -272,10 +269,7 @@ pub unsafe fn map_4k_current(
 
     // SAFETY: The leaf entry is in a valid page-table page and the frame is page-aligned.
     unsafe {
-        ptr::write_volatile(
-            pt.add(pt_index),
-            physical_address | PRESENT | WRITABLE,
-        );
+        ptr::write_volatile(pt.add(pt_index), physical_address | PRESENT | WRITABLE);
     }
     compiler_fence(Ordering::SeqCst);
     // SAFETY: INVLPG is privileged and this function requires ring 0.
