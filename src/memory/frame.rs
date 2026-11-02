@@ -9,13 +9,13 @@ pub struct PhysFrame {
     pub start_address: u64,
 }
 
-/// Iterates over free 4 KiB frames described as usable by Limine.
-pub struct FrameAllocator {
+/// Iterates over 4 KiB physical frames described as usable by Limine.
+pub struct UsableFrameIter {
     regions: MemoryMapEntries,
     current: Option<(u64, u64)>,
 }
 
-impl FrameAllocator {
+impl UsableFrameIter {
     /// Creates a frame iterator from the bootloader memory map.
     ///
     /// # Safety
@@ -31,7 +31,7 @@ impl FrameAllocator {
     }
 }
 
-impl Iterator for FrameAllocator {
+impl Iterator for UsableFrameIter {
     type Item = PhysFrame;
 
     fn next(&mut self) -> Option<Self::Item> {
