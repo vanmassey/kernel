@@ -192,9 +192,20 @@ pub extern "C" fn _start() -> ! {
 
     // SAFETY: Limine terminal output is available only during the bootloader-provided session.
     let display_ready = unsafe {
-        boot::limine::write_terminal(
-            "\\x1b[2J\\x1b[H\\x1b[1;36mKERNEL OS\\x1b[0m\\r\\n\\r\\n             Kernel initialisation complete\\r\\n             [ OK ] Limine boot protocol\\r\\n             [ OK ] CPU identification\\r\\n             [ OK ] Interrupt descriptor table\\r\\n             [ OK ] Physical memory discovery\\r\\n             [ OK ] Physical frame allocator\\r\\n             [ OK ] Higher-half direct map\\r\\n\\r\\n             Architecture: x86_64\\r\\n             Kernel milestone: 0.7\\r\\n\\r\\n             System initialised.\\r\\n             CPU halted - page-table management is next.\\r\\n"
-        )
+        boot::limine::write_terminal(concat!(
+            "\x1b[2J\x1b[H\x1b[1;36mKERNEL OS\x1b[0m\r\n\r\n",
+            "Kernel initialisation complete\r\n",
+            "[ OK ] Limine boot protocol\r\n",
+            "[ OK ] CPU identification\r\n",
+            "[ OK ] Interrupt descriptor table\r\n",
+            "[ OK ] Physical memory discovery\r\n",
+            "[ OK ] Physical frame allocator\r\n",
+            "[ OK ] Higher-half direct map\r\n\r\n",
+            "Architecture: x86_64\r\n",
+            "Kernel milestone: 0.7\r\n\r\n",
+            "System initialised.\r\n",
+            "CPU halted - page-table management is next.\r\n"
+        ))
     };
     let _ = writeln!(
         serial,
