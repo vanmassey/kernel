@@ -40,6 +40,7 @@ boot-test: iso
 	@grep -F "[memory] HHDM offset:" build/qemu-serial.log
 	@grep -F "[memory] Direct-map virtual address:" build/qemu-serial.log
 	@grep -F "[boot] Milestone 0.7: HHDM address conversion" build/qemu-serial.log
+	@grep -F "[display] Limine terminal:" build/qemu-serial.log
 	@echo "QEMU boot smoke test passed."
 
 exception-test: iso
