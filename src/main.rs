@@ -4,6 +4,7 @@
 use core::fmt::{self, Write};
 use core::panic::PanicInfo;
 
+mod arch;
 mod boot;
 mod memory;
 
@@ -101,6 +102,10 @@ pub extern "C" fn _start() -> ! {
     let _ = writeln!(serial, "[boot] COM1 serial console initialised");
     let _ = writeln!(serial, "[boot] Limine base revision request present");
 
+    // SAFETY: Early startup is single-core and maskable interrupts remain disabled.
+    unsafe { arch::x86_64::idt::initialize() };
+    let _ = writeln!(serial, "[cpu] Emergency IDT installed (256 gates)");
+
     // SAFETY: Limine populated the memory-map response before transferring control.
     if let Some(memory_map) = unsafe { boot::limine::memory_map_summary() } {
         let usable_mib = memory_map.usable_bytes / (1024 * 1024);
@@ -130,9 +135,9 @@ pub extern "C" fn _start() -> ! {
 
     let _ = writeln!(
         serial,
-        "[boot] Milestone 0.3: initial physical frame allocator"
+        "[boot] Milestone 0.4: emergency interrupt descriptor table"
     );
-    let _ = writeln!(serial, "[boot] CPU halted; next: CPU exceptions and IDT");
+    let _ = writeln!(serial, "[boot] CPU halted; next: per-exception diagnostics");
     halt()
 }
 
