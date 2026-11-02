@@ -37,7 +37,9 @@ boot-test: iso
 	@grep -F "[cpu] Exception diagnostics enabled (vectors 0-31)" build/qemu-serial.log
 	@grep -F "[cpu] Vendor:" build/qemu-serial.log
 	@grep -F "[cpu] NX:" build/qemu-serial.log
-	@grep -F "[boot] Milestone 0.6: CPU feature discovery" build/qemu-serial.log
+	@grep -F "[memory] HHDM offset:" build/qemu-serial.log
+	@grep -F "[memory] Direct-map virtual address:" build/qemu-serial.log
+	@grep -F "[boot] Milestone 0.7: HHDM address conversion" build/qemu-serial.log
 	@echo "QEMU boot smoke test passed."
 
 exception-test: iso
