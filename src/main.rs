@@ -191,6 +191,23 @@ pub extern "C" fn _start() -> ! {
     let _ = writeln!(serial, "[boot] Milestone 0.8: framebuffer display");
     let _ = writeln!(serial, "[boot] Display initialisation complete; CPU halted");
 
+    if let Some(offset) = direct_map_offset {
+        let kernel_address = _start as usize as u64;
+        // SAFETY: The kernel runs in ring 0 with Limine's HHDM and active four-level tables.
+        match unsafe { memory::paging::translate_current(kernel_address, offset) } {
+            Some(translation) => {
+                let _ = writeln!(
+                    serial,
+                    "[memory] Active page-table translation: {:#018x} -> {:#018x} ({:?})",
+                    kernel_address, translation.physical_address, translation.page_size
+                );
+            }
+            None => {
+                let _ = writeln!(serial, "[memory] Active page-table translation unavailable");
+            }
+        }
+    }
+
     match display::framebuffer::draw_boot_screen() {
         Some((width, height)) => {
             let _ = writeln!(serial, "[display] Framebuffer online: {}x{} RGB", width, height);
