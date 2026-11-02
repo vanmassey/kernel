@@ -105,9 +105,7 @@ pub extern "C" fn _start() -> ! {
         let _ = writeln!(
             serial,
             "[memory] {} regions, {} usable regions, {} MiB usable",
-            memory_map.entry_count,
-            memory_map.usable_region_count,
-            usable_mib
+            memory_map.entry_count, memory_map.usable_region_count, usable_mib
         );
     } else {
         let _ = writeln!(serial, "[memory] Limine memory map unavailable or invalid");
