@@ -17,7 +17,7 @@ The ELF image is written to target/x86_64-unknown-none/debug/kernel.
 
 ## Boot with Limine
 
-Obtain the official Limine binary release and place its BIOS/UEFI boot files and `limine` utility in a local directory. It should contain `limine-bios.sys`, `limine-bios-cd.bin`, `limine-uefi-cd.bin`, `BOOTX64.EFI`, and `limine`.
+Obtain the official Limine binary release and extract it. The release includes the Limine host utility as source, so build that utility once with `make -C /path/to/limine`. The directory should then contain `limine-bios.sys`, `limine-bios-cd.bin`, `limine-uefi-cd.bin`, `BOOTX64.EFI`, and the built `limine` executable.
 
 Build the hybrid BIOS/UEFI ISO:
 
