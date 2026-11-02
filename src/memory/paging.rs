@@ -201,8 +201,7 @@ pub unsafe fn create_kernel_address_space(
     let original_root_pointer = original_root_virtual.as_u64() as *const u64;
 
     // SAFETY: The physical frame allocator returns a fresh usable page.
-    let (new_root, new_root_pointer) =
-        unsafe { allocate_zeroed_table(allocator, hhdm_offset)? };
+    let (new_root, new_root_pointer) = unsafe { allocate_zeroed_table(allocator, hhdm_offset)? };
 
     // SAFETY: Both pointers address distinct, valid 4 KiB page-table pages.
     unsafe { ptr::copy_nonoverlapping(original_root_pointer, new_root_pointer, 512) };
@@ -217,8 +216,7 @@ pub unsafe fn create_kernel_address_space(
     }
     let slot = free_slot?;
 
-    let test_virtual_address =
-        0xffff_0000_0000_0000 | ((slot as u64) << 39) | PAGE_4K;
+    let test_virtual_address = 0xffff_0000_0000_0000 | ((slot as u64) << 39) | PAGE_4K;
 
     let data_frame = allocator.allocate_frame()?;
     if data_frame.start_address & !ADDRESS_MASK != 0 {
