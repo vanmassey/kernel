@@ -9,10 +9,10 @@ const MEMMAP_USABLE: u64 = 0;
 const MAX_MEMORY_MAP_ENTRIES: u64 = 4096;
 
 #[repr(C)]
-struct MemoryMapEntry {
-    base: u64,
-    length: u64,
-    entry_type: u64,
+pub(crate) struct MemoryMapEntry {
+    pub(crate) base: u64,
+    pub(crate) length: u64,
+    pub(crate) entry_type: u64,
 }
 
 #[repr(C)]
@@ -91,5 +91,74 @@ pub unsafe fn memory_map_summary() -> Option<MemoryMapSummary> {
         entry_count,
         usable_region_count,
         usable_bytes,
+    })
+}
+
+pub(crate) struct MemoryMapRegion {
+    pub base: u64,
+    pub length: u64,
+    pub entry_type: u64,
+}
+
+pub(crate) struct MemoryMapEntries {
+    entries: *const *const MemoryMapEntry,
+    count: u64,
+    index: u64,
+}
+
+impl Iterator for MemoryMapEntries {
+    type Item = MemoryMapRegion;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.index < self.count {
+            let index = self.index;
+            self.index += 1;
+
+            // SAFETY: The constructor validates the Limine array and bounds the entry count.
+            let entry = unsafe { ptr::read_volatile(self.entries.add(index as usize)) };
+            if entry.is_null() {
+                return None;
+            }
+
+            // SAFETY: Each non-null pointer is a Limine memory-map entry.
+            let base = unsafe { ptr::read_volatile(ptr::addr_of!((*entry).base)) };
+            let length = unsafe { ptr::read_volatile(ptr::addr_of!((*entry).length)) };
+            let entry_type = unsafe { ptr::read_volatile(ptr::addr_of!((*entry).entry_type)) };
+
+            return Some(MemoryMapRegion {
+                base,
+                length,
+                entry_type,
+            });
+        }
+
+        None
+    }
+}
+
+/// Creates an iterator over the memory map supplied by Limine.
+///
+/// # Safety
+/// Call only after Limine has transferred control to the kernel. The bootloader-owned
+/// response and entry array must remain mapped and valid while the iterator is used.
+pub(crate) unsafe fn memory_map_entries() -> Option<MemoryMapEntries> {
+    // SAFETY: Limine writes the response pointer before entering the kernel.
+    let response = unsafe { ptr::read_volatile(ptr::addr_of!(MEMORY_MAP_REQUEST.response)) };
+    if response.is_null() {
+        return None;
+    }
+
+    // SAFETY: The response pointer is non-null and owned by the bootloader.
+    let count = unsafe { ptr::read_volatile(ptr::addr_of!((*response).entry_count)) };
+    let entries = unsafe { ptr::read_volatile(ptr::addr_of!((*response).entries)) };
+
+    if count > MAX_MEMORY_MAP_ENTRIES || (count != 0 && entries.is_null()) {
+        return None;
+    }
+
+    Some(MemoryMapEntries {
+        entries,
+        count,
+        index: 0,
     })
 }
