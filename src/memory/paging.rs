@@ -73,10 +73,7 @@ fn entry_address(entry: u64) -> Option<u64> {
 /// # Safety
 /// Must run in ring 0 after Limine has installed a valid HHDM. Every physical page-table
 /// page traversed must be accessible through that direct map. Five-level paging is rejected.
-pub unsafe fn translate_current(
-    virtual_address: u64,
-    hhdm_offset: u64,
-) -> Option<Translation> {
+pub unsafe fn translate_current(virtual_address: u64, hhdm_offset: u64) -> Option<Translation> {
     let upper = virtual_address >> 48;
     let sign = (virtual_address >> 47) & 1;
     if !((sign == 0 && upper == 0) || (sign == 1 && upper == 0xffff)) {
