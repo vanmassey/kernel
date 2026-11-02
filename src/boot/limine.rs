@@ -208,3 +208,80 @@ pub(crate) unsafe fn memory_map_entries() -> Option<MemoryMapEntries> {
         index: 0,
     })
 }
+
+
+const LIMINE_TERMINAL_REQUEST_ID_0: u64 = 0xc8ac_5931_0c2b_0844;
+const LIMINE_TERMINAL_REQUEST_ID_1: u64 = 0xa68d_0c72_65d3_8878;
+
+#[repr(C)]
+struct LimineTerminal {
+    columns: u64,
+    rows: u64,
+    framebuffer: *mut core::ffi::c_void,
+}
+
+type TerminalWrite = unsafe extern "C" fn(*mut LimineTerminal, *const u8, u64);
+type TerminalCallback = unsafe extern "C" fn(*mut LimineTerminal, u64, u64, u64, u64);
+
+#[repr(C)]
+struct TerminalResponse {
+    revision: u64,
+    terminal_count: u64,
+    terminals: *const *mut LimineTerminal,
+    write: Option<TerminalWrite>,
+}
+
+#[repr(C)]
+struct TerminalRequest {
+    id: [u64; 4],
+    revision: u64,
+    response: *mut TerminalResponse,
+    callback: Option<TerminalCallback>,
+}
+
+#[used]
+#[link_section = ".limine_requests"]
+static mut TERMINAL_REQUEST: TerminalRequest = TerminalRequest {
+    id: [
+        LIMINE_COMMON_MAGIC_0,
+        LIMINE_COMMON_MAGIC_1,
+        LIMINE_TERMINAL_REQUEST_ID_0,
+        LIMINE_TERMINAL_REQUEST_ID_1,
+    ],
+    revision: 0,
+    response: ptr::null_mut(),
+    callback: None,
+};
+
+/// Writes text using the terminal service provided by Limine.
+///
+/// Returns false when the bootloader did not provide a terminal.
+pub unsafe fn write_terminal(text: &str) -> bool {
+    // SAFETY: Limine populates the response before entering the kernel.
+    let response = unsafe { ptr::read_volatile(ptr::addr_of!(TERMINAL_REQUEST.response)) };
+    if response.is_null() {
+        return false;
+    }
+
+    // SAFETY: The response pointer is supplied by Limine and remains valid during boot.
+    let count = unsafe { ptr::read_volatile(ptr::addr_of!((*response).terminal_count)) };
+    let terminals = unsafe { ptr::read_volatile(ptr::addr_of!((*response).terminals)) };
+    let write = unsafe { ptr::read_volatile(ptr::addr_of!((*response).write)) };
+
+    if count == 0 || terminals.is_null() {
+        return false;
+    }
+    let Some(write) = write else {
+        return false;
+    };
+
+    // SAFETY: The first terminal pointer is part of Limine's validated response array.
+    let terminal = unsafe { ptr::read_volatile(terminals) };
+    if terminal.is_null() {
+        return false;
+    }
+
+    // SAFETY: Limine's terminal write callback accepts a byte pointer and explicit length.
+    unsafe { write(terminal, text.as_ptr(), text.len() as u64) };
+    true
+}
