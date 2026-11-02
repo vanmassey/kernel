@@ -26,12 +26,13 @@ The goal is a capable, maintainable general-purpose operating system with its ow
 - Freestanding Rust target and nightly toolchain
 - Limine request markers and kernel entry point
 - Limine physical memory-map request and usable-memory summary
+- Usable 4 KiB physical-frame iterator
 - COM1 serial output for early diagnostics
 - Kernel panic handler and CPU halt routine
 - Linker script and boot configuration
 - Automated formatting and compilation checks with GitHub Actions
 
-The next development milestones cover a physical frame allocator, CPU exceptions, interrupt handling, virtual memory, and the kernel heap.
+The next development milestones cover frame reservation and allocation, CPU exceptions, interrupt handling, virtual memory, and the kernel heap.
 
 ## Build
 
