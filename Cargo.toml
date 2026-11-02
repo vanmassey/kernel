@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2021"
 publish = false
 
+[features]
+default = []
+exception-test = []
+
 [profile.dev]
 panic = "abort"
 opt-level = 1
