@@ -100,6 +100,7 @@ pub extern "C" fn _start() -> ! {
     let _ = writeln!(serial, "[boot] Entered kernel entry point");
     let _ = writeln!(serial, "[boot] COM1 serial console initialised");
     let _ = writeln!(serial, "[boot] Limine base revision request present");
+
     // SAFETY: Limine populated the memory-map response before transferring control.
     if let Some(memory_map) = unsafe { boot::limine::memory_map_summary() } {
         let usable_mib = memory_map.usable_bytes / (1024 * 1024);
@@ -111,8 +112,24 @@ pub extern "C" fn _start() -> ! {
     } else {
         let _ = writeln!(serial, "[memory] Limine memory map unavailable or invalid");
     }
-    let _ = writeln!(serial, "[boot] Milestone 0.2: memory map discovery");
-    let _ = writeln!(serial, "[boot] CPU halted; next: physical frame allocator");
+
+    // SAFETY: Limine's memory map remains available throughout early kernel startup.
+    if let Some(mut allocator) = unsafe { memory::allocator::PhysicalFrameAllocator::new() } {
+        if let Some(frame) = allocator.allocate_frame() {
+            let _ = writeln!(
+                serial,
+                "[memory] Allocated physical frame at {:#018x}",
+                frame.start_address
+            );
+        } else {
+            let _ = writeln!(serial, "[memory] No usable physical frames available");
+        }
+    } else {
+        let _ = writeln!(serial, "[memory] Physical frame allocator unavailable");
+    }
+
+    let _ = writeln!(serial, "[boot] Milestone 0.3: initial physical frame allocator");
+    let _ = writeln!(serial, "[boot] CPU halted; next: CPU exceptions and IDT");
     halt()
 }
 
