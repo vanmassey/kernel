@@ -1,0 +1,21 @@
+name: Kernel CI
+
+on:
+  push:
+    branches: [main, 'foundation/**']
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Install nightly Rust
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src, llvm-tools-preview, rustfmt
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Build freestanding kernel
+        run: cargo build -Z build-std=core,compiler_builtins
