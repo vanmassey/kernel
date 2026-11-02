@@ -28,10 +28,10 @@ iso: build
 	"$(LIMINE_DIR)/limine" bios-install build/kernel.iso
 
 run: iso
-	qemu-system-x86_64 -M q35 -m 256M -cdrom build/kernel.iso -serial stdio -no-reboot -no-shutdown
+	qemu-system-x86_64 -M q35 -m 256M -cdrom build/kernel.iso -boot order=d -serial stdio -no-reboot -no-shutdown
 
 boot-test: iso
-	@set +e; timeout 15s qemu-system-x86_64 -M q35 -m 256M -cdrom build/kernel.iso -serial stdio -display none -no-reboot -no-shutdown > build/qemu-serial.log 2>&1; status=$$?; set -e; if [ $$status -ne 124 ] && [ $$status -ne 0 ]; then cat build/qemu-serial.log; exit $$status; fi
+	@set +e; timeout 15s qemu-system-x86_64 -M q35 -m 256M -cdrom build/kernel.iso -boot order=d -serial stdio -display none -no-reboot -no-shutdown > build/qemu-serial.log 2>&1; status=$$?; set -e; if [ $$status -ne 124 ] && [ $$status -ne 0 ]; then cat build/qemu-serial.log; exit $$status; fi
 	@echo "--- QEMU serial output ---"; cat build/qemu-serial.log
 	@grep -F "KERNEL :: x86_64 Rust kernel" build/qemu-serial.log
 	@grep -F "[cpu] Emergency IDT installed (256 gates)" build/qemu-serial.log
