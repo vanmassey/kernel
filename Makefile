@@ -3,12 +3,12 @@ KERNEL := target/$(TARGET)/debug/kernel
 ISO_ROOT := build/iso_root
 LIMINE_DIR ?= limine
 
-.PHONY: all build check clean iso run boot-test
+.PHONY: all build check clean iso run boot-test exception-test
 
 all: build
 
 build:
-	cargo +nightly build -Z build-std=core,compiler_builtins
+	cargo +nightly build -Z build-std=core,compiler_builtins $(if $(FEATURES),--features $(FEATURES),)
 
 check:
 	cargo +nightly check -Z build-std=core,compiler_builtins
@@ -37,6 +37,14 @@ boot-test: iso
 	@grep -F "[cpu] Exception diagnostics enabled (vectors 0-31)" build/qemu-serial.log
 	@grep -F "[boot] Milestone 0.5: per-exception diagnostics" build/qemu-serial.log
 	@echo "QEMU boot smoke test passed."
+
+exception-test: iso
+	@set +e; timeout 5s qemu-system-x86_64 -M q35 -m 256M -cdrom build/kernel.iso -boot order=d -serial stdio -display none -no-reboot -no-shutdown > build/qemu-exception.log 2>&1; status=$?; set -e; if [ $status -ne 124 ] && [ $status -ne 0 ]; then cat build/qemu-exception.log; exit $status; fi
+	@echo "--- QEMU exception-test serial output ---"; cat build/qemu-exception.log
+	@grep -F "[CPU EXCEPTION] Breakpoint (vector 3)" build/qemu-exception.log
+	@grep -F "[exception] Error code:" build/qemu-exception.log
+	@grep -F "[exception] Instruction pointer:" build/qemu-exception.log
+	@echo "QEMU exception self-test passed."
 
 clean:
 	cargo clean
