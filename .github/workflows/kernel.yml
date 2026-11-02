@@ -19,3 +19,30 @@ jobs:
         run: cargo fmt --all -- --check
       - name: Build freestanding kernel
         run: cargo build -Z build-std=core,compiler_builtins
+
+  boot-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Install nightly Rust
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src, llvm-tools-preview
+      - name: Install ISO and emulator tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes qemu-system-x86 xorriso
+      - name: Download Limine binary release
+        run: |
+          mkdir -p limine
+          curl --fail --location --silent --show-error \
+            https://github.com/Limine-Bootloader/Limine/releases/download/v12.9.6/limine-binary.tar.gz \
+            --output /tmp/limine-binary.tar.gz
+          tar -xzf /tmp/limine-binary.tar.gz -C limine
+          limine_dir="$(dirname "$(find limine -type f -name limine-bios.sys -print -quit)")"
+          test -n "$limine_dir"
+          test -x "$limine_dir/limine"
+          echo "LIMINE_DIR=$limine_dir" >> "$GITHUB_ENV"
+      - name: Build ISO and boot in QEMU
+        run: make boot-test LIMINE_DIR="$LIMINE_DIR"
