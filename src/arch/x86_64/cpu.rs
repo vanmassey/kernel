@@ -33,7 +33,7 @@ pub fn detect() -> CpuInfo {
     let leaf1 = if basic.eax >= 1 {
         unsafe { __cpuid(1) }
     } else {
-        core::arch::x86_64::__cpuid(0)
+        unsafe { __cpuid(0) }
     };
 
     // SAFETY: The extended maximum-leaf query is defined by the x86 CPUID interface.
