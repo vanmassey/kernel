@@ -7,17 +7,18 @@ The kernel is monolithic with modular internal subsystems. Rust is the primary l
 ## Bring-up sequence
 
 1. Boot protocol and early diagnostics
-2. CPU feature discovery and descriptor tables
-3. Physical memory map and frame allocator
-4. Virtual memory and kernel address-space layout
-5. Interrupt descriptor table and exception handlers
-6. Local APIC and timer
-7. Kernel heap
-8. Scheduler and task model
-9. System-call boundary and user mode
-10. VFS and initial in-memory filesystem
-11. Device-driver framework
-12. Storage, networking, and userspace
+2. Limine boot information and physical memory-map discovery
+3. Physical frame allocator
+4. CPU feature discovery and descriptor tables
+5. Virtual memory and kernel address-space layout
+6. Interrupt descriptor table and exception handlers
+7. Local APIC and timer
+8. Kernel heap
+9. Scheduler and task model
+10. System-call boundary and user mode
+11. VFS and initial in-memory filesystem
+12. Device-driver framework
+13. Storage, networking, and userspace
 
 ## Safety rules
 
@@ -29,4 +30,4 @@ The kernel is monolithic with modular internal subsystems. Rust is the primary l
 
 ## Current limitations
 
-The foundation has no allocator, interrupt controller, scheduler, userspace, filesystem, or device model. The kernel currently emits early diagnostics over the legacy COM1 UART and halts. These are intentional boundaries, not implemented features.
+The kernel currently requests the Limine physical memory map and reports the number of entries and total usable memory over the legacy COM1 UART. Physical frame allocation, interrupt handling, scheduling, userspace, filesystems, and the device model are the next major subsystems.
