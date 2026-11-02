@@ -5,6 +5,7 @@ use core::fmt::{self, Write};
 use core::panic::PanicInfo;
 
 mod boot;
+mod memory;
 
 #[used]
 #[link_section = ".limine_requests_start"]
