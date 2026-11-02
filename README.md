@@ -28,13 +28,13 @@ The goal is a capable, maintainable general-purpose operating system with its ow
 - Limine physical memory-map request and usable-memory summary
 - Usable 4 KiB physical-frame iterator
 - Initial monotonic physical-frame allocator
-- 256-entry x86_64 interrupt descriptor table with an emergency halt handler
+- 256-entry x86_64 interrupt descriptor table with dedicated diagnostic stubs for CPU exceptions 0–31 and an emergency handler for other vectors
 - COM1 serial output for early diagnostics
 - Kernel panic handler and CPU halt routine
 - Linker script and boot configuration
 - Automated formatting, compilation, and QEMU boot smoke tests with GitHub Actions
 
-The next development milestones cover per-exception diagnostics, interrupt-controller setup, virtual memory, and the kernel heap. The QEMU smoke test builds a bootable Limine ISO and checks that the kernel reaches its startup milestone.
+The next development milestones cover CPU feature discovery, virtual memory, interrupt-controller setup, and the kernel heap. The QEMU smoke test builds a bootable Limine ISO and checks that the kernel reaches its startup milestone.
 
 ## Build
 
