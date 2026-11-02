@@ -1,46 +1,76 @@
 # Kernel
 
-A from-scratch x86_64 operating-system kernel written primarily in Rust.
+A from-scratch operating-system kernel for x86_64, written primarily in Rust.
 
-The project is in early bring-up. The first objective is a small, auditable kernel that boots under Limine, writes diagnostics to a serial console, and provides a stable foundation for memory management, interrupts, scheduling, drivers, filesystems, and networking.
+Kernel is built as a freestanding, `no_std` binary and uses Limine for boot. The project is organised around a small core with clearly separated architecture-specific code and kernel subsystems.
 
-## Design
+## Project direction
 
-- Architecture: x86_64 (initial target)
-- Kernel design: monolithic, internally modular
-- Primary language: Rust (no_std)
-- Low-level language: x86_64 Assembly where required
-- Boot protocol: Limine
-- Emulator: QEMU
-- Build: Cargo, nightly Rust, GNU Make
-- Licence: GNU GPL v2 (see LICENSE)
+The goal is a capable, maintainable general-purpose operating system with its own kernel, memory manager, scheduler, device drivers, filesystem, and userspace.
 
-## Status
+| Area | Current direction |
+|---|---|
+| Architecture | x86_64 |
+| Kernel design | Monolithic, internally modular |
+| Main language | Rust (`no_std`) |
+| Low-level code | x86_64 Assembly where required |
+| Boot protocol | Limine |
+| Development emulator | QEMU |
+| Build system | Cargo, nightly Rust, GNU Make |
+| Licence | GNU GPL v2 |
 
-Milestone 0.1 — Foundation (in progress). This milestone establishes the freestanding build, Limine entry point, COM1 serial diagnostics, panic handling, and developer documentation. A successful compile is not a successful boot: QEMU testing is required before declaring the milestone complete.
+## Current development
 
-## Prerequisites
+**Foundation — 0.1**
 
-Install nightly Rust with rust-src and llvm-tools-preview, QEMU, GNU Make, xorriso, and the Limine bootloader binaries/tooling.
+- Freestanding Rust target and nightly toolchain
+- Limine request markers and kernel entry point
+- COM1 serial output for early diagnostics
+- Kernel panic handler and CPU halt routine
+- Linker script and boot configuration
+- Automated formatting and compilation checks with GitHub Actions
 
-    rustup toolchain install nightly
-    rustup component add rust-src llvm-tools-preview --toolchain nightly
-    make build
+The next development milestones cover boot information and physical memory discovery, CPU exceptions, interrupt handling, virtual memory, and the kernel heap.
 
-See docs/BUILDING.md for the complete workflow.
+## Build
 
-## Project layout
+Install nightly Rust and the required components:
 
-- src/ — kernel entry point and early boot code
-- src/arch/x86_64/ — architecture-specific code
-- docs/ — architecture and development notes
+```sh
+rustup toolchain install nightly
+rustup component add rust-src llvm-tools-preview --toolchain nightly
+```
+
+Build the kernel:
+
+```sh
+make build
+```
+
+For the complete ISO and QEMU workflow, see [docs/BUILDING.md](docs/BUILDING.md).
+
+## Repository layout
+
+```text
+.cargo/                 Cargo target configuration
+.github/workflows/      Continuous integration
+docs/                   Build and architecture documentation
+src/arch/x86_64/        x86_64-specific kernel code
+src/main.rs             Kernel entry point and early serial console
+Cargo.toml              Kernel package and build profiles
+linker.ld               Kernel linker layout
+limine.conf             Limine boot configuration
+Makefile                Build, ISO, QEMU, and clean targets
+```
 
 ## Engineering principles
 
 1. Keep unsafe Rust small, explicit, and documented.
 2. Make hardware and architecture assumptions visible.
-3. Prefer tested interfaces over premature feature breadth.
-4. Do not claim a subsystem works until it has a test or reproducible manual verification.
-5. Keep boot, architecture, memory, scheduling, drivers, and filesystems separated by clear interfaces.
+3. Separate architecture-specific implementation from general kernel interfaces.
+4. Test pure logic independently and verify hardware-dependent behaviour in QEMU.
+5. Build stable foundations before adding higher-level functionality.
 
-This is an independent project. It is not Linux and does not aim to be Linux-compatible at this stage.
+## Licence
+
+This project is distributed under the GNU General Public License, version 2. See [LICENSE](LICENSE).
