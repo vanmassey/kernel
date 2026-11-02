@@ -23,13 +23,27 @@ impl SerialPort {
 
     unsafe fn out(port: u16, value: u8) {
         // SAFETY: COM1 I/O port access is intentional during early boot.
-        unsafe { core::arch::asm!("out dx, al", in("dx") port, in("al") value, options(nomem, nostack, preserves_flags)); }
+        unsafe {
+            core::arch::asm!(
+                "out dx, al",
+                in("dx") port,
+                in("al") value,
+                options(nomem, nostack, preserves_flags)
+            );
+        }
     }
 
     unsafe fn input(port: u16) -> u8 {
         let value: u8;
         // SAFETY: Reading the selected UART register is intentional during early boot.
-        unsafe { core::arch::asm!("in al, dx", in("dx") port, out("al") value, options(nomem, nostack, preserves_flags)); }
+        unsafe {
+            core::arch::asm!(
+                "in al, dx",
+                in("dx") port,
+                out("al") value,
+                options(nomem, nostack, preserves_flags)
+            );
+        }
         value
     }
 
@@ -62,7 +76,9 @@ impl SerialPort {
 impl Write for SerialPort {
     fn write_str(&mut self, text: &str) -> fmt::Result {
         for byte in text.bytes() {
-            if byte == b'\n' { self.write_byte(b'\r'); }
+            if byte == b'\n' {
+                self.write_byte(b'\r');
+            }
             self.write_byte(byte);
         }
         Ok(())
@@ -96,6 +112,8 @@ fn panic(info: &PanicInfo) -> ! {
 fn halt() -> ! {
     loop {
         // SAFETY: Halt the CPU; interrupts remain disabled until an IDT is installed.
-        unsafe { core::arch::asm!("cli", "hlt", options(nomem, nostack)); }
+        unsafe {
+            core::arch::asm!("cli", "hlt", options(nomem, nostack));
+        }
     }
 }
