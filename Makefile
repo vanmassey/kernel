@@ -8,10 +8,10 @@ LIMINE_DIR ?= limine
 all: build
 
 build:
-	cargo +nightly build -Z build-std=core,compiler_builtins $(if $(FEATURES),--features $(FEATURES),)
+	cargo +nightly build -Z build-std=core,alloc,compiler_builtins $(if $(FEATURES),--features $(FEATURES),)
 
 check:
-	cargo +nightly check -Z build-std=core,compiler_builtins
+	cargo +nightly check -Z build-std=core,alloc,compiler_builtins
 
 iso: build
 	@test -f "$(KERNEL)" || (echo "Kernel ELF not found: $(KERNEL)" && exit 1)
@@ -42,7 +42,8 @@ boot-test: iso
 	@grep -F "[memory] Active page-table translation:" build/qemu-serial.log
 	@grep -F "[memory] Kernel heap ready:" build/qemu-serial.log
 	@grep -F "[memory] Heap allocator self-test: passed" build/qemu-serial.log
-	@grep -F "[boot] Milestone 0.8: framebuffer and paging inspection" build/qemu-serial.log
+	@grep -F "[memory] Rust Vec self-test: passed" build/qemu-serial.log
+	@grep -F "[boot] Milestone 0.10: Rust allocation support" build/qemu-serial.log
 	@grep -F "[display] Framebuffer online:" build/qemu-serial.log
 	@echo "QEMU boot smoke test passed."
 
