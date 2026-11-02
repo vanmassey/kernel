@@ -6,6 +6,52 @@ const LIMINE_MEMMAP_REQUEST_ID_0: u64 = 0x67cf_3d9d_378a_806f;
 const LIMINE_MEMMAP_REQUEST_ID_1: u64 = 0xe304_acdf_c50c_3c62;
 
 const MEMMAP_USABLE: u64 = 0;
+
+const LIMINE_HHDM_REQUEST_ID_0: u64 = 0x48dc_f1cb_8ad2_b852;
+const LIMINE_HHDM_REQUEST_ID_1: u64 = 0x6398_4e95_9a98_244b;
+
+#[repr(C)]
+struct HhdmResponse {
+    revision: u64,
+    offset: u64,
+}
+
+#[repr(C)]
+struct HhdmRequest {
+    id: [u64; 4],
+    revision: u64,
+    response: *mut HhdmResponse,
+}
+
+#[used]
+#[link_section = ".limine_requests"]
+static mut HHDM_REQUEST: HhdmRequest = HhdmRequest {
+    id: [
+        LIMINE_COMMON_MAGIC_0,
+        LIMINE_COMMON_MAGIC_1,
+        LIMINE_HHDM_REQUEST_ID_0,
+        LIMINE_HHDM_REQUEST_ID_1,
+    ],
+    revision: 0,
+    response: ptr::null_mut(),
+};
+
+/// Returns the higher-half direct-map offset supplied by Limine.
+///
+/// # Safety
+/// Must only be called after Limine has transferred control to the kernel.
+/// The response pointer must remain valid for the duration of this call.
+pub unsafe fn hhdm_offset() -> Option<u64> {
+    // SAFETY: Limine writes this response pointer before entering the kernel.
+    let response = unsafe { ptr::read_volatile(ptr::addr_of!(HHDM_REQUEST.response)) };
+    if response.is_null() {
+        return None;
+    }
+
+    // SAFETY: The response pointer is non-null and owned by the bootloader.
+    Some(unsafe { ptr::read_volatile(ptr::addr_of!((*response).offset)) })
+}
+
 const MAX_MEMORY_MAP_ENTRIES: u64 = 4096;
 
 #[repr(C)]
