@@ -209,78 +209,124 @@ pub(crate) unsafe fn memory_map_entries() -> Option<MemoryMapEntries> {
     })
 }
 
-const LIMINE_TERMINAL_REQUEST_ID_0: u64 = 0xc8ac_5931_0c2b_0844;
-const LIMINE_TERMINAL_REQUEST_ID_1: u64 = 0xa68d_0c72_65d3_8878;
+
+const LIMINE_FRAMEBUFFER_REQUEST_ID_0: u64 = 0x9d58_27dc_d881_dd75;
+const LIMINE_FRAMEBUFFER_REQUEST_ID_1: u64 = 0xa314_8604_f6fa_b11b;
 
 #[repr(C)]
-struct LimineTerminal {
-    columns: u64,
-    rows: u64,
-    framebuffer: *mut core::ffi::c_void,
+pub(crate) struct LimineFramebuffer {
+    pub address: *mut u8,
+    pub width: u64,
+    pub height: u64,
+    pub pitch: u64,
+    pub bpp: u16,
+    pub memory_model: u8,
+    pub red_mask_size: u8,
+    pub red_mask_shift: u8,
+    pub green_mask_size: u8,
+    pub green_mask_shift: u8,
+    pub blue_mask_size: u8,
+    pub blue_mask_shift: u8,
+    unused: [u8; 7],
+    edid_size: u64,
+    edid: *mut core::ffi::c_void,
+    mode_count: u64,
+    modes: *const *mut core::ffi::c_void,
 }
 
-type TerminalWrite = unsafe extern "C" fn(*mut LimineTerminal, *const u8, u64);
-type TerminalCallback = unsafe extern "C" fn(*mut LimineTerminal, u64, u64, u64, u64);
-
 #[repr(C)]
-struct TerminalResponse {
+struct FramebufferResponse {
     revision: u64,
-    terminal_count: u64,
-    terminals: *const *mut LimineTerminal,
-    write: Option<TerminalWrite>,
+    framebuffer_count: u64,
+    framebuffers: *const *mut LimineFramebuffer,
 }
 
 #[repr(C)]
-struct TerminalRequest {
+struct FramebufferRequest {
     id: [u64; 4],
     revision: u64,
-    response: *mut TerminalResponse,
-    callback: Option<TerminalCallback>,
+    response: *mut FramebufferResponse,
 }
 
 #[used]
 #[link_section = ".limine_requests"]
-static mut TERMINAL_REQUEST: TerminalRequest = TerminalRequest {
+static mut FRAMEBUFFER_REQUEST: FramebufferRequest = FramebufferRequest {
     id: [
         LIMINE_COMMON_MAGIC_0,
         LIMINE_COMMON_MAGIC_1,
-        LIMINE_TERMINAL_REQUEST_ID_0,
-        LIMINE_TERMINAL_REQUEST_ID_1,
+        LIMINE_FRAMEBUFFER_REQUEST_ID_0,
+        LIMINE_FRAMEBUFFER_REQUEST_ID_1,
     ],
     revision: 0,
     response: ptr::null_mut(),
-    callback: None,
 };
 
-/// Writes text using the terminal service provided by Limine.
+/// Returns the first framebuffer described by Limine.
 ///
-/// Returns false when the bootloader did not provide a terminal.
-pub unsafe fn write_terminal(text: &str) -> bool {
-    // SAFETY: Limine populates the response before entering the kernel.
-    let response = unsafe { ptr::read_volatile(ptr::addr_of!(TERMINAL_REQUEST.response)) };
-    if response.is_null() {
-        return false;
-    }
-
-    // SAFETY: The response pointer is supplied by Limine and remains valid during boot.
-    let count = unsafe { ptr::read_volatile(ptr::addr_of!((*response).terminal_count)) };
-    let terminals = unsafe { ptr::read_volatile(ptr::addr_of!((*response).terminals)) };
-    let write = unsafe { ptr::read_volatile(ptr::addr_of!((*response).write)) };
-
-    if count == 0 || terminals.is_null() {
-        return false;
-    }
-    let Some(write) = write else {
-        return false;
+/// # Safety
+/// Must only be called after Limine has transferred control to the kernel.
+/// The response and framebuffer structures must remain mapped and valid.
+pub(crate) unsafe fn framebuffer() -> Option<FramebufferInfo> {
+    let response = unsafe {
+        ptr::read_volatile(ptr::addr_of!(FRAMEBUFFER_REQUEST.response))
     };
-
-    // SAFETY: The first terminal pointer is part of Limine's validated response array.
-    let terminal = unsafe { ptr::read_volatile(terminals) };
-    if terminal.is_null() {
-        return false;
+    if response.is_null() {
+        return None;
     }
 
-    // SAFETY: Limine's terminal write callback accepts a byte pointer and explicit length.
-    unsafe { write(terminal, text.as_ptr(), text.len() as u64) };
-    true
+    let count = unsafe { ptr::read_volatile(ptr::addr_of!((*response).framebuffer_count)) };
+    let framebuffers = unsafe { ptr::read_volatile(ptr::addr_of!((*response).framebuffers)) };
+    if count == 0 || count > 16 || framebuffers.is_null() {
+        return None;
+    }
+
+    let framebuffer = unsafe { ptr::read_volatile(framebuffers) };
+    if framebuffer.is_null() {
+        return None;
+    }
+
+    Some(FramebufferInfo {
+        address: unsafe { ptr::read_volatile(ptr::addr_of!((*framebuffer).address)) },
+        width: unsafe { ptr::read_volatile(ptr::addr_of!((*framebuffer).width)) },
+        height: unsafe { ptr::read_volatile(ptr::addr_of!((*framebuffer).height)) },
+        pitch: unsafe { ptr::read_volatile(ptr::addr_of!((*framebuffer).pitch)) },
+        bpp: unsafe { ptr::read_volatile(ptr::addr_of!((*framebuffer).bpp)) },
+        memory_model: unsafe {
+            ptr::read_volatile(ptr::addr_of!((*framebuffer).memory_model))
+        },
+        red_mask_size: unsafe {
+            ptr::read_volatile(ptr::addr_of!((*framebuffer).red_mask_size))
+        },
+        red_mask_shift: unsafe {
+            ptr::read_volatile(ptr::addr_of!((*framebuffer).red_mask_shift))
+        },
+        green_mask_size: unsafe {
+            ptr::read_volatile(ptr::addr_of!((*framebuffer).green_mask_size))
+        },
+        green_mask_shift: unsafe {
+            ptr::read_volatile(ptr::addr_of!((*framebuffer).green_mask_shift))
+        },
+        blue_mask_size: unsafe {
+            ptr::read_volatile(ptr::addr_of!((*framebuffer).blue_mask_size))
+        },
+        blue_mask_shift: unsafe {
+            ptr::read_volatile(ptr::addr_of!((*framebuffer).blue_mask_shift))
+        },
+    })
+}
+
+#[derive(Clone, Copy)]
+pub(crate) struct FramebufferInfo {
+    pub address: *mut u8,
+    pub width: u64,
+    pub height: u64,
+    pub pitch: u64,
+    pub bpp: u16,
+    pub memory_model: u8,
+    pub red_mask_size: u8,
+    pub red_mask_shift: u8,
+    pub green_mask_size: u8,
+    pub green_mask_shift: u8,
+    pub blue_mask_size: u8,
+    pub blue_mask_shift: u8,
 }
