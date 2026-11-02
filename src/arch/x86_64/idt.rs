@@ -84,7 +84,10 @@ pub unsafe fn initialize() {
     for index in 0..IDT_ENTRIES {
         // SAFETY: index is bounded by the 256-entry IDT allocation.
         unsafe {
-            ptr::write(idt_ptr.add(index), IdtEntry::interrupt_gate(handler, selector));
+            ptr::write(
+                idt_ptr.add(index),
+                IdtEntry::interrupt_gate(handler, selector),
+            );
         }
     }
 
