@@ -2,7 +2,7 @@
 
 ## Toolchain
 
-The kernel is a freestanding Rust binary and builds core for x86_64-unknown-none using nightly Rust.
+The kernel is a freestanding Rust binary and builds `core`, `alloc`, and `compiler_builtins` for x86_64-unknown-none using nightly Rust.
 
     rustup toolchain install nightly
     rustup component add rust-src llvm-tools-preview --toolchain nightly
@@ -43,5 +43,5 @@ GitHub Actions runs this test on pushes and pull requests. The workflow download
 - COM1 is configured for 38400 baud, 8 data bits, no parity, one stop bit.
 - Interrupts are not enabled yet. The kernel deliberately halts after startup messages.
 - The physical-frame allocator is monotonic and does not free frames.
-- The initial 256 KiB heap is backed by contiguous usable frames accessed through the Limine HHDM. It supports aligned bump allocation but does not reclaim deallocated memory.
+- The initial 256 KiB heap is backed by contiguous usable frames accessed through the Limine HHDM. It supports aligned bump allocation and Rust `alloc` collections, but does not reclaim deallocated memory.
 - The heap is an early kernel facility, not yet a general-purpose allocator for long-running workloads.
