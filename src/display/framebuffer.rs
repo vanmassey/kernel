@@ -146,11 +146,7 @@ impl Display {
         ];
 
         let first_log_y = margin + line_height * 4;
-        let available_rows = self
-            .info
-            .height
-            .saturating_sub(first_log_y + margin)
-            / line_height;
+        let available_rows = self.info.height.saturating_sub(first_log_y + margin) / line_height;
         let visible_rows = (available_rows.max(1) as usize).min(logs.len());
 
         for index in 0..logs.len() {
