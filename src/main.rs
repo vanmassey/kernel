@@ -176,6 +176,47 @@ pub extern "C" fn _start() -> ! {
         } else {
             let _ = writeln!(serial, "[memory] No usable physical frames available");
         }
+
+        if let Some(offset) = direct_map_offset {
+            let heap_frames = memory::heap::HEAP_SIZE / 4096;
+            if let Some(heap_frame) = allocator.allocate_contiguous_frames(heap_frames) {
+                let last_physical = heap_frame
+                    .start_address
+                    .checked_add(memory::heap::HEAP_SIZE as u64 - 1);
+                let heap_virtual = memory::frame::physical_to_virtual(heap_frame.start_address, offset);
+                let last_virtual = last_physical
+                    .and_then(|address| memory::frame::physical_to_virtual(address, offset));
+
+                if let (Some(heap_virtual), Some(_)) = (heap_virtual, last_virtual) {
+                    let heap_pointer = heap_virtual.as_u64() as *mut u8;
+                    // SAFETY: The allocator reserved this contiguous run from Limine's
+                    // usable map, and both ends were validated through the active HHDM.
+                    unsafe { core::ptr::write_bytes(heap_pointer, 0, memory::heap::HEAP_SIZE) };
+
+                    if memory::heap::initialise(heap_pointer, memory::heap::HEAP_SIZE) {
+                        let _ = writeln!(
+                            serial,
+                            "[memory] Kernel heap ready: {} KiB at {:#018x}",
+                            memory::heap::HEAP_SIZE / 1024,
+                            heap_virtual.as_u64()
+                        );
+                        let _ = writeln!(
+                            serial,
+                            "[memory] Heap allocator self-test: {}",
+                            if memory::heap::self_test() { "passed" } else { "FAILED" }
+                        );
+                    } else {
+                        let _ = writeln!(serial, "[memory] Kernel heap initialisation failed");
+                    }
+                } else {
+                    let _ = writeln!(serial, "[memory] Heap region is not addressable through HHDM");
+                }
+            } else {
+                let _ = writeln!(serial, "[memory] Could not reserve contiguous frames for heap");
+            }
+        } else {
+            let _ = writeln!(serial, "[memory] Heap unavailable without HHDM");
+        }
     } else {
         let _ = writeln!(serial, "[memory] Physical frame allocator unavailable");
     }
