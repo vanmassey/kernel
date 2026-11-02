@@ -217,7 +217,10 @@ pub extern "C" fn _start() -> ! {
             let _ = writeln!(serial, "[display] No supported Limine RGB framebuffer");
         }
     }
-    let _ = writeln!(serial, "[boot] Milestone 0.8: framebuffer and paging inspection");
+    let _ = writeln!(
+        serial,
+        "[boot] Milestone 0.8: framebuffer and paging inspection"
+    );
     let _ = writeln!(serial, "[boot] Display initialisation complete; CPU halted");
     halt()
 }
