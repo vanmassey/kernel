@@ -47,3 +47,5 @@ jobs:
           echo "LIMINE_DIR=$limine_dir" >> "$GITHUB_ENV"
       - name: Build ISO and boot in QEMU
         run: make boot-test LIMINE_DIR="$LIMINE_DIR"
+      - name: Trigger and verify a CPU exception
+        run: make exception-test FEATURES=exception-test LIMINE_DIR="$LIMINE_DIR"
