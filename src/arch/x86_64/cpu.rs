@@ -55,13 +55,9 @@ pub fn detect() -> CpuInfo {
         has_sse2: leaf1.edx & (1 << 26) != 0,
         has_apic: leaf1.edx & (1 << 9) != 0,
         has_x2apic: leaf1.ecx & (1 << 21) != 0,
-        has_nx: max_extended_leaf >= 0x8000_0001
-            && extended_features.edx & (1 << 20) != 0,
-        has_1gib_pages: max_extended_leaf >= 0x8000_0001
-            && extended_features.edx & (1 << 26) != 0,
-        has_syscall: max_extended_leaf >= 0x8000_0001
-            && extended_features.edx & (1 << 11) != 0,
-        has_long_mode: max_extended_leaf >= 0x8000_0001
-            && extended_features.edx & (1 << 29) != 0,
+        has_nx: max_extended_leaf >= 0x8000_0001 && extended_features.edx & (1 << 20) != 0,
+        has_1gib_pages: max_extended_leaf >= 0x8000_0001 && extended_features.edx & (1 << 26) != 0,
+        has_syscall: max_extended_leaf >= 0x8000_0001 && extended_features.edx & (1 << 11) != 0,
+        has_long_mode: max_extended_leaf >= 0x8000_0001 && extended_features.edx & (1 << 29) != 0,
     }
 }
