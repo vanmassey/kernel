@@ -4,6 +4,8 @@
 use core::fmt::{self, Write};
 use core::panic::PanicInfo;
 
+mod boot;
+
 #[used]
 #[link_section = ".limine_requests_start"]
 static LIMINE_REQUESTS_START_MARKER: [u64; 2] = [0xf6b8_f4b3_9de7_d1ae, 0xfab9_1a69_40fc_b9cf];
@@ -97,8 +99,21 @@ pub extern "C" fn _start() -> ! {
     let _ = writeln!(serial, "[boot] Entered kernel entry point");
     let _ = writeln!(serial, "[boot] COM1 serial console initialised");
     let _ = writeln!(serial, "[boot] Limine base revision request present");
-    let _ = writeln!(serial, "[boot] Milestone 0.1 foundation reached");
-    let _ = writeln!(serial, "[boot] CPU halted; next: memory and interrupts");
+    // SAFETY: Limine populated the memory-map response before transferring control.
+    if let Some(memory_map) = unsafe { boot::limine::memory_map_summary() } {
+        let usable_mib = memory_map.usable_bytes / (1024 * 1024);
+        let _ = writeln!(
+            serial,
+            "[memory] {} regions, {} usable regions, {} MiB usable",
+            memory_map.entry_count,
+            memory_map.usable_region_count,
+            usable_mib
+        );
+    } else {
+        let _ = writeln!(serial, "[memory] Limine memory map unavailable or invalid");
+    }
+    let _ = writeln!(serial, "[boot] Milestone 0.2: memory map discovery");
+    let _ = writeln!(serial, "[boot] CPU halted; next: physical frame allocator");
     halt()
 }
 
