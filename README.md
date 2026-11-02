@@ -21,7 +21,7 @@ The goal is a capable, maintainable general-purpose operating system with its ow
 
 ## Current development
 
-**Current milestone — 0.9**
+**Current milestone — 0.10**
 
 - Freestanding Rust target and nightly toolchain
 - Limine request markers and kernel entry point
@@ -33,12 +33,13 @@ The goal is a capable, maintainable general-purpose operating system with its ow
 - Limine framebuffer discovery and an early RGB pixel/text renderer
 - Four-level page-table walker for 4 KiB, 2 MiB, and 1 GiB mappings
 - Initial 256 KiB kernel bump heap backed by contiguous usable physical frames and the Limine HHDM
+- Rust `alloc` support with an allocation-error handler and a QEMU-tested `Vec` allocation path
 - COM1 serial output for early diagnostics
 - Kernel panic handler and CPU halt routine
 - Linker script and boot configuration
 - Automated formatting, compilation, and QEMU boot smoke tests with GitHub Actions
 
-Milestone 0.8 added a direct RGB framebuffer renderer for the Sestina startup screen and inspection of the active four-level page tables. Milestone 0.9 adds a 256 KiB early kernel heap backed by a contiguous run of usable physical frames. The allocator is aligned and safe for concurrent reservations, but remains monotonic: freeing and page reclamation are not implemented. Next milestones cover managed page-table creation, interrupt-controller setup, and timers. The QEMU smoke test builds a bootable Limine ISO and checks that the kernel reaches its startup milestone.
+Milestone 0.8 added a direct RGB framebuffer renderer for the Sestina startup screen and inspection of the active four-level page tables. Milestone 0.9 added a 256 KiB early kernel heap backed by a contiguous run of usable physical frames. Milestone 0.10 connects Rust's `alloc` crate to that heap and verifies real `Vec` allocations during QEMU boot. The allocator is aligned and safe for concurrent reservations, but remains monotonic: freeing and page reclamation are not implemented. Next milestones cover managed page-table creation, interrupt-controller setup, and timers. The QEMU smoke test builds a bootable Limine ISO and checks that the kernel reaches its startup milestone.
 
 ## Build
 
