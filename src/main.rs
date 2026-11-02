@@ -183,7 +183,8 @@ pub extern "C" fn _start() -> ! {
                 let last_physical = heap_frame
                     .start_address
                     .checked_add(memory::heap::HEAP_SIZE as u64 - 1);
-                let heap_virtual = memory::frame::physical_to_virtual(heap_frame.start_address, offset);
+                let heap_virtual =
+                    memory::frame::physical_to_virtual(heap_frame.start_address, offset);
                 let last_virtual = last_physical
                     .and_then(|address| memory::frame::physical_to_virtual(address, offset));
 
@@ -203,16 +204,26 @@ pub extern "C" fn _start() -> ! {
                         let _ = writeln!(
                             serial,
                             "[memory] Heap allocator self-test: {}",
-                            if memory::heap::self_test() { "passed" } else { "FAILED" }
+                            if memory::heap::self_test() {
+                                "passed"
+                            } else {
+                                "FAILED"
+                            }
                         );
                     } else {
                         let _ = writeln!(serial, "[memory] Kernel heap initialisation failed");
                     }
                 } else {
-                    let _ = writeln!(serial, "[memory] Heap region is not addressable through HHDM");
+                    let _ = writeln!(
+                        serial,
+                        "[memory] Heap region is not addressable through HHDM"
+                    );
                 }
             } else {
-                let _ = writeln!(serial, "[memory] Could not reserve contiguous frames for heap");
+                let _ = writeln!(
+                    serial,
+                    "[memory] Could not reserve contiguous frames for heap"
+                );
             }
         } else {
             let _ = writeln!(serial, "[memory] Heap unavailable without HHDM");
