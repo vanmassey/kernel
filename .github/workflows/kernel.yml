@@ -4,6 +4,7 @@ on:
   push:
     branches: [main, 'foundation/**']
   pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -15,12 +16,11 @@ jobs:
         uses: dtolnay/rust-toolchain@nightly
         with:
           components: rust-src, llvm-tools-preview, rustfmt
-      - name: Check formatting
-        run: cargo fmt --all -- --check
-      - name: Build freestanding kernel
-        run: cargo build -Z build-std=core,alloc,compiler_builtins
+      - name: Verify formatting and build
+        run: make verify
 
   boot-smoke:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Check out source

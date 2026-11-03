@@ -436,6 +436,54 @@ pub extern "C" fn kernel_exception_handler(
         "[exception] Instruction pointer: {:#018x}",
         instruction_pointer
     );
+
+    if vector == 14 {
+        let fault_address: u64;
+        // SAFETY: Reading CR2 is privileged and this handler executes in ring 0.
+        unsafe {
+            core::arch::asm!(
+                "mov {}, cr2",
+                out(reg) fault_address,
+                options(nomem, nostack, preserves_flags)
+            );
+        }
+
+        let _ = writeln!(
+            serial,
+            "[page fault] Faulting virtual address: {:#018x}",
+            fault_address
+        );
+        let _ = writeln!(
+            serial,
+            "[page fault] Cause: {}",
+            if error_code & 1 == 0 {
+                "page not present"
+            } else {
+                "protection violation"
+            }
+        );
+        let _ = writeln!(
+            serial,
+            "[page fault] Access: {}",
+            if error_code & 2 == 0 { "read" } else { "write" }
+        );
+        let _ = writeln!(
+            serial,
+            "[page fault] Privilege: {}",
+            if error_code & 4 == 0 {
+                "supervisor"
+            } else {
+                "user"
+            }
+        );
+        if error_code & 8 != 0 {
+            let _ = writeln!(serial, "[page fault] Reserved page-table bit violation");
+        }
+        if error_code & 16 != 0 {
+            let _ = writeln!(serial, "[page fault] Instruction fetch");
+        }
+    }
+
     halt()
 }
 

@@ -3,7 +3,7 @@ KERNEL := target/$(TARGET)/debug/kernel
 ISO_ROOT := build/iso_root
 LIMINE_DIR ?= limine
 
-.PHONY: all build check clean iso run boot-test exception-test
+.PHONY: all build check fmt verify clean iso run boot-test exception-test
 
 all: build
 
@@ -12,6 +12,11 @@ build:
 
 check:
 	cargo +nightly check -Z build-std=core,alloc,compiler_builtins
+
+fmt:
+	cargo +nightly fmt --all -- --check
+
+verify: fmt build
 
 iso: build
 	@test -f "$(KERNEL)" || (echo "Kernel ELF not found: $(KERNEL)" && exit 1)
