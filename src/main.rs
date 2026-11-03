@@ -326,7 +326,7 @@ pub extern "C" fn _start() -> ! {
     let _ = writeln!(serial, "[interrupt] PIC remapped; only IRQ0 unmasked");
     let _ = writeln!(serial, "[timer] PIT configured at 100 Hz");
 
-    let mut keyboard = arch::x86_64::keyboard::Keyboard::new();
+    let _ = arch::x86_64::keyboard::Keyboard::new();
     let _ = writeln!(
         serial,
         "[keyboard] PS/2 polling interface ready; IRQ1 remains masked"
