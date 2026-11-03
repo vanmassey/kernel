@@ -77,20 +77,20 @@ impl FileSystem for RamFs {
     fn create_dir(&mut self, path: &str) -> Result<(), FsError> {
         let components = parse_path(path)?;
         let (parent, name) = Self::parent_and_name(&mut self.root, &components)?;
-        if parent.contains_key(*name) {
+        if parent.contains_key(name) {
             return Err(FsError::AlreadyExists);
         }
-        parent.insert(String::from(*name), Node::Directory(BTreeMap::new()));
+        parent.insert(String::from(name), Node::Directory(BTreeMap::new()));
         Ok(())
     }
 
     fn create_file(&mut self, path: &str) -> Result<(), FsError> {
         let components = parse_path(path)?;
         let (parent, name) = Self::parent_and_name(&mut self.root, &components)?;
-        if parent.contains_key(*name) {
+        if parent.contains_key(name) {
             return Err(FsError::AlreadyExists);
         }
-        parent.insert(String::from(*name), Node::File(Vec::new()));
+        parent.insert(String::from(name), Node::File(Vec::new()));
         Ok(())
     }
 
