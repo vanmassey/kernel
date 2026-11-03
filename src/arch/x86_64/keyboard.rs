@@ -160,7 +160,11 @@ impl Keyboard {
         };
 
         if is_letter {
-            Some(if self.caps_lock ^ shifted { upper } else { normal })
+            Some(if self.caps_lock ^ shifted {
+                upper
+            } else {
+                normal
+            })
         } else {
             Some(if shifted { upper } else { normal })
         }
@@ -178,13 +182,53 @@ impl Keyboard {
         let caps_down = keyboard.feed_scancode(0x3A);
         let caps_upper = keyboard.feed_scancode(0x1E);
 
-        matches!(lower, Some(KeyEvent { ascii: Some(b'a'), pressed: true, .. }))
-            && matches!(release, Some(KeyEvent { ascii: None, pressed: false, .. }))
-            && matches!(shift_down, Some(KeyEvent { scancode: 0x2A, .. }))
-            && matches!(upper, Some(KeyEvent { ascii: Some(b'A'), pressed: true, .. }))
-            && matches!(shift_up, Some(KeyEvent { scancode: 0x2A, pressed: false, .. }))
-            && matches!(caps_down, Some(KeyEvent { scancode: 0x3A, pressed: true, .. }))
-            && matches!(caps_upper, Some(KeyEvent { ascii: Some(b'A'), pressed: true, .. }))
+        matches!(
+            lower,
+            Some(KeyEvent {
+                ascii: Some(b'a'),
+                pressed: true,
+                ..
+            })
+        ) && matches!(
+            release,
+            Some(KeyEvent {
+                ascii: None,
+                pressed: false,
+                ..
+            })
+        ) && matches!(shift_down, Some(KeyEvent { scancode: 0x2A, .. }))
+            && matches!(
+                upper,
+                Some(KeyEvent {
+                    ascii: Some(b'A'),
+                    pressed: true,
+                    ..
+                })
+            )
+            && matches!(
+                shift_up,
+                Some(KeyEvent {
+                    scancode: 0x2A,
+                    pressed: false,
+                    ..
+                })
+            )
+            && matches!(
+                caps_down,
+                Some(KeyEvent {
+                    scancode: 0x3A,
+                    pressed: true,
+                    ..
+                })
+            )
+            && matches!(
+                caps_upper,
+                Some(KeyEvent {
+                    ascii: Some(b'A'),
+                    pressed: true,
+                    ..
+                })
+            )
     }
 }
 
