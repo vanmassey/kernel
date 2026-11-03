@@ -376,7 +376,7 @@ pub extern "C" fn _start() -> ! {
             core::arch::asm!("sti", "hlt", options(nomem, nostack));
         }
     }
-
+}
 
 fn additional_page_mapping_self_test(
     allocator: &mut memory::allocator::PhysicalFrameAllocator,
