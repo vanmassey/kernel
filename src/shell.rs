@@ -70,10 +70,10 @@ impl Console {
                 return byte;
             }
 
-            // SAFETY: The IDT and IRQ0 handler are installed before the shell starts.
-            // STI enables the PIT interrupt, and HLT sleeps until the next timer tick.
+            // SAFETY: The shell enables maskable interrupts before entering this loop.
+            // The PIT tick wakes HLT so keyboard and serial input can be polled again.
             unsafe {
-                core::arch::asm!("sti", "hlt", options(nomem, nostack));
+                core::arch::asm!("hlt", options(nomem, nostack));
             }
         }
     }
@@ -111,6 +111,12 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
     let mut history_lengths = [0usize; HISTORY_CAPACITY];
     let mut history_next = 0usize;
     let mut history_count = 0usize;
+
+    // SAFETY: The IDT, PIC, and PIT are initialised before the shell is entered.
+    // Enable IRQ0 so uptime and timer ticks continue while the shell is running.
+    unsafe {
+        core::arch::asm!("sti", options(nomem, nostack));
+    }
 
     let _ = writeln!(console, "");
     let _ = writeln!(console, "Sestina operating system");
