@@ -133,20 +133,11 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
             history_count += 1;
         }
 
-        match command {
-            "help" => {
-                let _ = writeln!(console, "Available commands:");
-                let _ = writeln!(console, "  help       Show this command list");
-                let _ = writeln!(console, "  about      Describe Sestina");
-                let _ = writeln!(console, "  uname      Show kernel and architecture");
-                let _ = writeln!(console, "  version    Show kernel version");
-                let _ = writeln!(console, "  cpu        Show processor information");
-                let _ = writeln!(console, "  uptime     Show time since shell startup");
-                let _ = writeln!(console, "  ticks      Show hardware timer ticks");
-                let _ = writeln!(console, "  history    Show the last eight commands");
-                let _ = writeln!(console, "  clear      Clear a compatible serial terminal");
-                let _ = writeln!(console, "  echo TEXT  Print TEXT");
-            }
+        let (name, args) = command.split_once(' ').unwrap_or((command, ""));
+        let args = args.trim();
+
+        match name {
+            "help" => print_help(&mut console, args),
             "about" => {
                 let _ = writeln!(
                     console,
@@ -196,18 +187,69 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
                 }
             }
             "clear" => {
-                let _ = write!(console, "\x1b[2J\x1b[H");
+                let _ = write!(console, "\\x1b[2J\\x1b[H");
             }
-            _ if command == "echo" => {
-                let _ = writeln!(console, "");
-            }
-            _ if command.starts_with("echo ") => {
-                let _ = writeln!(console, "{}", &command[5..]);
+            "echo" => {
+                let _ = writeln!(console, "{}", args);
             }
             _ => {
-                let _ = writeln!(console, "Unknown command: {}", command);
+                let _ = writeln!(console, "Unknown command: {}", name);
                 let _ = writeln!(console, "Type 'help' for a list of commands.");
             }
+        }
+    }
+}
+
+
+fn print_help(console: &mut Console, topic: &str) {
+    if topic.is_empty() {
+        let _ = writeln!(console, "Available commands:");
+        let _ = writeln!(console, "  help [COMMAND]  Show command help");
+        let _ = writeln!(console, "  about           Describe Sestina");
+        let _ = writeln!(console, "  uname           Show kernel and architecture");
+        let _ = writeln!(console, "  version         Show kernel version");
+        let _ = writeln!(console, "  cpu             Show processor information");
+        let _ = writeln!(console, "  uptime          Show time since shell startup");
+        let _ = writeln!(console, "  ticks           Show hardware timer ticks");
+        let _ = writeln!(console, "  history         Show the last eight commands");
+        let _ = writeln!(console, "  clear           Clear a compatible serial terminal");
+        let _ = writeln!(console, "  echo TEXT       Print TEXT");
+        return;
+    }
+
+    match topic {
+        "help" => {
+            let _ = writeln!(console, "help [COMMAND] - list commands or explain one command");
+        }
+        "about" => {
+            let _ = writeln!(console, "about - describe the Sestina operating-system project");
+        }
+        "uname" => {
+            let _ = writeln!(console, "uname - print the kernel name and architecture");
+        }
+        "version" => {
+            let _ = writeln!(console, "version - print the kernel version");
+        }
+        "cpu" => {
+            let _ = writeln!(console, "cpu - show detected processor capabilities");
+        }
+        "uptime" => {
+            let _ = writeln!(console, "uptime - show elapsed time since shell startup");
+        }
+        "ticks" => {
+            let _ = writeln!(console, "ticks - show the current PIT tick count");
+        }
+        "history" => {
+            let _ = writeln!(console, "history - list the last eight entered commands");
+        }
+        "clear" => {
+            let _ = writeln!(console, "clear - send ANSI clear-screen and cursor-home codes");
+        }
+        "echo" => {
+            let _ = writeln!(console, "echo TEXT - print TEXT to the console");
+        }
+        _ => {
+            let _ = writeln!(console, "No help available for '{}'.", topic);
         }
     }
 }
