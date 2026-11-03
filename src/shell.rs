@@ -1,4 +1,4 @@
-//! Minimal serial command-line interface for early Sestina development.
+//! Text-mode command interpreter with serial and framebuffer output.
 
 use core::fmt::{self, Write};
 
@@ -41,6 +41,7 @@ impl Console {
     }
 
     fn put_byte(byte: u8) {
+        crate::display::framebuffer::write_byte(byte);
         for _ in 0..1_000_000 {
             if Self::input(Self::COM1 + 5) & 0x20 != 0 {
                 Self::output(Self::COM1, byte);
@@ -123,7 +124,7 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
     let _ = writeln!(console, "Type 'help' to list available commands.");
 
     loop {
-        let _ = write!(console, "sestina> ");
+        let _ = write!(console, "C:\\>");
         let mut length = 0usize;
         let mut history_position = history_count;
         let mut draft = [0u8; LINE_CAPACITY];
@@ -304,7 +305,7 @@ fn redraw_line(
     length: usize,
     old_length: usize,
 ) {
-    let _ = write!(console, "\rsestina> ");
+    let _ = write!(console, "\rC:\\>");
     for byte in &line[..length] {
         Console::put_byte(*byte);
     }
@@ -335,7 +336,7 @@ fn print_help(console: &mut Console, topic: &str) {
         let _ = writeln!(console, "  history         Show the last eight commands");
         let _ = writeln!(
             console,
-            "  clear           Clear a compatible serial terminal"
+            "  clear           Clear the screen"
         );
         let _ = writeln!(console, "  echo TEXT       Print TEXT");
         return;
