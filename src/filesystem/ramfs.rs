@@ -56,14 +56,14 @@ impl RamFs {
         Ok(directory)
     }
 
-    fn parent_and_name<'a>(
+    fn parent_and_name<'a, 'b>(
         root: &'a mut Directory,
-        components: &[&str],
-    ) -> Result<(&'a mut Directory, &'a str), FsError> {
+        components: &[&'b str],
+    ) -> Result<(&'a mut Directory, &'b str), FsError> {
         let (name, parents) = components.split_last().ok_or(FsError::InvalidPath)?;
         let parent = Self::directory_at_mut(root, parents)?;
         // The name comes from the caller's path, not from the borrowed directory.
-        Ok((parent, name))
+        Ok((parent, *name))
     }
 }
 
