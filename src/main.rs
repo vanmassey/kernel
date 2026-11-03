@@ -13,6 +13,7 @@ mod arch;
 mod boot;
 mod display;
 mod memory;
+mod shell;
 
 #[used]
 #[link_section = ".limine_requests_start"]
@@ -354,28 +355,8 @@ pub extern "C" fn _start() -> ! {
         "[timer] Interrupt self-test passed: {} ticks",
         arch::x86_64::interrupts::ticks()
     );
-    let _ = writeln!(serial, "[keyboard] Input polling loop active");
-
-    loop {
-        if let Some(event) = keyboard.poll_event() {
-            if event.pressed {
-                if let Some(character) = event.ascii {
-                    let _ = writeln!(serial, "[keyboard] key: {}", char::from(character));
-                } else {
-                    let _ = writeln!(
-                        serial,
-                        "[keyboard] key event: scancode {:#04x}, extended={}",
-                        event.scancode, event.extended
-                    );
-                }
-            }
-        }
-
-        // STI followed by HLT avoids a busy loop; the PIT provides periodic wake-ups.
-        unsafe {
-            core::arch::asm!("sti", "hlt", options(nomem, nostack));
-        }
-    }
+    let _ = writeln!(serial, "[shell] Serial command shell ready");
+    shell::run(&cpu, arch::x86_64::interrupts::ticks());
 }
 
 fn additional_page_mapping_self_test(
