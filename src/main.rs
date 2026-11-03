@@ -423,51 +423,6 @@ fn additional_page_mapping_self_test(
     mapped == PATTERN && direct == PATTERN
 }
 
-fn additional_page_mapping_self_test(
-    allocator: &mut memory::allocator::PhysicalFrameAllocator,
-    hhdm_offset: u64,
-    virtual_address: u64,
-) -> bool {
-    let Some(frame) = allocator.allocate_frame() else {
-        return false;
-    };
-    let Some(last_physical) = frame.start_address.checked_add(4095) else {
-        return false;
-    };
-    let Some(direct_address) = memory::frame::physical_to_virtual(frame.start_address, hhdm_offset)
-    else {
-        return false;
-    };
-    if memory::frame::physical_to_virtual(last_physical, hhdm_offset).is_none() {
-        return false;
-    }
-
-    // SAFETY: The frame is newly reserved and its complete page is addressable via the HHDM.
-    unsafe {
-        core::ptr::write_bytes(direct_address.as_u64() as *mut u8, 0, 4096);
-    }
-    // SAFETY: Early boot is single-core, ring 0, and the supplied allocator exclusively
-    // owns its frames; the active kernel page tables and HHDM are valid.
-    if unsafe {
-        memory::paging::map_4k_current(allocator, hhdm_offset, virtual_address, frame.start_address)
-    }
-    .is_err()
-    {
-        return false;
-    }
-
-    const PATTERN: u64 = 0x5345_5354_494e_4102;
-    // SAFETY: The mapper has just installed this writable virtual-to-physical mapping.
-    unsafe {
-        core::ptr::write_volatile(virtual_address as *mut u64, PATTERN);
-    }
-    // SAFETY: The virtual address and HHDM address alias the same reserved physical frame.
-    let mapped = unsafe { core::ptr::read_volatile(virtual_address as *const u64) };
-    // SAFETY: The direct-map address was validated above and refers to the same frame.
-    let direct = unsafe { core::ptr::read_volatile(direct_address.as_u64() as *const u64) };
-    mapped == PATTERN && direct == PATTERN
-}
-
 fn heap_vec_self_test() -> bool {
     let mut values = Vec::with_capacity(32);
     for value in 0_usize..32 {
