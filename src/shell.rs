@@ -5,6 +5,9 @@ use core::fmt::{self, Write};
 use crate::arch::x86_64::cpu::CpuInfo;
 use crate::arch::x86_64::interrupts;
 
+const LINE_CAPACITY: usize = 128;
+const HISTORY_CAPACITY: usize = 8;
+
 struct Console;
 
 impl Console {
@@ -72,7 +75,11 @@ impl Write for Console {
 pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
     let mut console = Console;
     let vendor = core::str::from_utf8(&cpu.vendor).unwrap_or("unknown");
-    let mut line = [0u8; 128];
+    let mut line = [0u8; LINE_CAPACITY];
+    let mut history_entries = [[0u8; LINE_CAPACITY]; HISTORY_CAPACITY];
+    let mut history_lengths = [0usize; HISTORY_CAPACITY];
+    let mut history_next = 0usize;
+    let mut history_count = 0usize;
 
     let _ = writeln!(console, "");
     let _ = writeln!(console, "Sestina operating system");
@@ -117,6 +124,15 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
             continue;
         }
 
+        // Keep a small, fixed-size history so the shell needs no heap allocation.
+        let command_bytes = command.as_bytes();
+        history_entries[history_next][..command_bytes.len()].copy_from_slice(command_bytes);
+        history_lengths[history_next] = command_bytes.len();
+        history_next = (history_next + 1) % HISTORY_CAPACITY;
+        if history_count < HISTORY_CAPACITY {
+            history_count += 1;
+        }
+
         match command {
             "help" => {
                 let _ = writeln!(console, "Available commands:");
@@ -127,6 +143,7 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
                 let _ = writeln!(console, "  cpu        Show processor information");
                 let _ = writeln!(console, "  uptime     Show time since shell startup");
                 let _ = writeln!(console, "  ticks      Show hardware timer ticks");
+                let _ = writeln!(console, "  history    Show the last eight commands");
                 let _ = writeln!(console, "  clear      Clear a compatible serial terminal");
                 let _ = writeln!(console, "  echo TEXT  Print TEXT");
             }
@@ -167,6 +184,17 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
             }
             "ticks" => {
                 let _ = writeln!(console, "Timer ticks: {}", interrupts::ticks());
+            }
+            "history" => {
+                let first = (history_next + HISTORY_CAPACITY - history_count) % HISTORY_CAPACITY;
+                for offset in 0..history_count {
+                    let index = (first + offset) % HISTORY_CAPACITY;
+                    let entry = core::str::from_utf8(
+                        &history_entries[index][..history_lengths[index]],
+                    )
+                    .unwrap_or("<invalid history entry>");
+                    let _ = writeln!(console, "{:>2}  {}", offset + 1, entry);
+                }
             }
             "clear" => {
                 let _ = write!(console, "\x1b[2J\x1b[H");
