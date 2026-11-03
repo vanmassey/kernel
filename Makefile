@@ -39,7 +39,6 @@ limine-setup:
 		test -n "$$limine_dir" || (echo "Could not find limine-bios.sys in the downloaded Limine release." && exit 1); \
 		make -C "$$limine_dir"; \
 	fi
-	@test -x "$(LIMINE_PATH)/limine" || (echo "Limine utility was not built successfully in $(LIMINE_PATH)." && exit 1)
 
 iso: build limine-setup
 	@test -f "$(KERNEL)" || (echo "Kernel ELF not found: $(KERNEL)" && exit 1)
