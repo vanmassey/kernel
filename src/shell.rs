@@ -69,7 +69,12 @@ impl Console {
             if let Some(byte) = Self::try_get_byte() {
                 return byte;
             }
-            core::hint::spin_loop();
+
+            // SAFETY: The IDT and IRQ0 handler are installed before the shell starts.
+            // STI enables the PIT interrupt, and HLT sleeps until the next timer tick.
+            unsafe {
+                core::arch::asm!("sti", "hlt", options(nomem, nostack));
+            }
         }
     }
 
