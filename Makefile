@@ -3,7 +3,7 @@ KERNEL := target/$(TARGET)/debug/kernel
 ISO_ROOT := build/iso_root
 LIMINE_DIR ?= limine
 
-.PHONY: all build check clean iso run boot-test exception-test timer-test
+.PHONY: all build check clean iso run boot-test exception-test
 
 all: build
 
