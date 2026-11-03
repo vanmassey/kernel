@@ -51,11 +51,21 @@ impl Console {
 
     fn get_byte() -> u8 {
         loop {
-            if Self::input(Self::COM1 + 5) & 0x01 != 0 {
-                return Self::input(Self::COM1);
+            if let Some(byte) = Self::try_get_byte() {
+                return byte;
             }
             core::hint::spin_loop();
         }
+    }
+
+    fn try_get_byte() -> Option<u8> {
+        for _ in 0..1_000_000 {
+            if Self::input(Self::COM1 + 5) & 0x01 != 0 {
+                return Some(Self::input(Self::COM1));
+            }
+            core::hint::spin_loop();
+        }
+        None
     }
 }
 
@@ -88,6 +98,10 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
     loop {
         let _ = write!(console, "sestina> ");
         let mut length = 0usize;
+        let mut history_position = history_count;
+        let mut draft = [0u8; LINE_CAPACITY];
+        let mut draft_length = 0usize;
+        let mut navigating_history = false;
 
         loop {
             let byte = Console::get_byte();
@@ -101,6 +115,48 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
                     if length > 0 {
                         length -= 1;
                         let _ = write!(console, "\x08 \x08");
+                    }
+                }
+                0x1b => {
+                    if Console::try_get_byte() == Some(b'[') {
+                        match Console::try_get_byte() {
+                            Some(b'A') if history_count > 0 && history_position > 0 => {
+                                if !navigating_history {
+                                    draft[..length].copy_from_slice(&line[..length]);
+                                    draft_length = length;
+                                    navigating_history = true;
+                                }
+                                history_position -= 1;
+                                let first = (history_next + HISTORY_CAPACITY - history_count)
+                                    % HISTORY_CAPACITY;
+                                let index = (first + history_position) % HISTORY_CAPACITY;
+                                let old_length = length;
+                                length = history_lengths[index];
+                                line[..length]
+                                    .copy_from_slice(&history_entries[index][..length]);
+                                redraw_line(&mut console, &line, length, old_length);
+                            }
+                            Some(b'B')
+                                if navigating_history && history_position < history_count =>
+                            {
+                                history_position += 1;
+                                let old_length = length;
+                                if history_position == history_count {
+                                    length = draft_length;
+                                    line[..length].copy_from_slice(&draft[..length]);
+                                    navigating_history = false;
+                                } else {
+                                    let first = (history_next + HISTORY_CAPACITY - history_count)
+                                        % HISTORY_CAPACITY;
+                                    let index = (first + history_position) % HISTORY_CAPACITY;
+                                    length = history_lengths[index];
+                                    line[..length]
+                                        .copy_from_slice(&history_entries[index][..length]);
+                                }
+                                redraw_line(&mut console, &line, length, old_length);
+                            }
+                            _ => {}
+                        }
                     }
                 }
                 0x20..=0x7e if length < line.len() - 1 => {
@@ -197,6 +253,24 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
                 let _ = writeln!(console, "Type 'help' for a list of commands.");
             }
         }
+    }
+}
+
+fn redraw_line(
+    console: &mut Console,
+    line: &[u8; LINE_CAPACITY],
+    length: usize,
+    old_length: usize,
+) {
+    let _ = write!(console, "\rsestina> ");
+    for byte in &line[..length] {
+        Console::put_byte(*byte);
+    }
+    for _ in length..old_length {
+        Console::put_byte(b' ');
+    }
+    for _ in length..old_length {
+        Console::put_byte(8);
     }
 }
 
