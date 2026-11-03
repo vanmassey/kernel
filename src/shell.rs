@@ -189,10 +189,9 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
                 let first = (history_next + HISTORY_CAPACITY - history_count) % HISTORY_CAPACITY;
                 for offset in 0..history_count {
                     let index = (first + offset) % HISTORY_CAPACITY;
-                    let entry = core::str::from_utf8(
-                        &history_entries[index][..history_lengths[index]],
-                    )
-                    .unwrap_or("<invalid history entry>");
+                    let entry =
+                        core::str::from_utf8(&history_entries[index][..history_lengths[index]])
+                            .unwrap_or("<invalid history entry>");
                     let _ = writeln!(console, "{:>2}  {}", offset + 1, entry);
                 }
             }
