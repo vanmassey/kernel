@@ -3,9 +3,12 @@
 use core::fmt::{self, Write};
 
 use crate::arch::x86_64::cpu::CpuInfo;
-use crate::filesystem::{ramfs::RamFs, vfs::{FileSystem, NodeKind}};
 use crate::arch::x86_64::interrupts;
 use crate::arch::x86_64::keyboard::Keyboard;
+use crate::filesystem::{
+    ramfs::RamFs,
+    vfs::{FileSystem, NodeKind},
+};
 
 const LINE_CAPACITY: usize = 128;
 const HISTORY_CAPACITY: usize = 8;
@@ -483,7 +486,10 @@ fn print_help(console: &mut Console, topic: &str) {
             let _ = writeln!(console, "echo TEXT - print TEXT to the console");
         }
         "pwd" => {
-            let _ = writeln!(console, "pwd - print the current directory (always / for now)");
+            let _ = writeln!(
+                console,
+                "pwd - print the current directory (always / for now)"
+            );
         }
         "ls" => {
             let _ = writeln!(console, "ls [PATH] - list a directory; defaults to /");
