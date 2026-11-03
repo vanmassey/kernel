@@ -132,8 +132,7 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
                                 let index = (first + history_position) % HISTORY_CAPACITY;
                                 let old_length = length;
                                 length = history_lengths[index];
-                                line[..length]
-                                    .copy_from_slice(&history_entries[index][..length]);
+                                line[..length].copy_from_slice(&history_entries[index][..length]);
                                 redraw_line(&mut console, &line, length, old_length);
                             }
                             Some(b'B')
