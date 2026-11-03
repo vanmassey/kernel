@@ -160,9 +160,7 @@ pub fn self_test() -> bool {
     let listing_matches = filesystem
         .list_dir("/system/config")
         .map(|entries| {
-            entries.len() == 1
-                && entries[0].name == "boot.txt"
-                && entries[0].kind == NodeKind::File
+            entries.len() == 1 && entries[0].name == "boot.txt" && entries[0].kind == NodeKind::File
         })
         .unwrap_or(false);
 
