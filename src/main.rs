@@ -470,7 +470,11 @@ pub extern "C" fn kernel_exception_handler(
         let _ = writeln!(
             serial,
             "[page fault] Privilege: {}",
-            if error_code & 4 == 0 { "supervisor" } else { "user" }
+            if error_code & 4 == 0 {
+                "supervisor"
+            } else {
+                "user"
+            }
         );
         if error_code & 8 != 0 {
             let _ = writeln!(serial, "[page fault] Reserved page-table bit violation");
