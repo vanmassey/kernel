@@ -13,7 +13,6 @@ struct Display {
     info: FramebufferInfo,
     cursor_x: u64,
     cursor_y: u64,
-    scale: u64,
     escape_state: u8,
 }
 
@@ -32,8 +31,7 @@ impl Display {
             || !valid_mask(info.blue_mask_size, info.blue_mask_shift)
         { return None; }
 
-        let scale = if info.width >= 640 { 2 } else { 1 };
-        Some(Self { info, cursor_x: 0, cursor_y: 0, scale, escape_state: 0 })
+        Some(Self { info, cursor_x: 0, cursor_y: 0, escape_state: 0 })
     }
 
     fn colour_value(&self, colour: Colour) -> u32 {
@@ -69,8 +67,8 @@ impl Display {
         for (row, bits) in rows.iter().enumerate() {
             for column in 0..5 {
                 if bits & (1 << (4 - column)) != 0 {
-                    self.rectangle(x + column * self.scale, y + row as u64 * self.scale,
-                        self.scale, self.scale, colour);
+                    self.rectangle(x + 1 + column, y + row as u64 * 2 + 1,
+                        1, 2, colour);
                 }
             }
         }
@@ -84,8 +82,8 @@ impl Display {
         }
     }
 
-    fn cell_width(&self) -> u64 { 6 * self.scale }
-    fn cell_height(&self) -> u64 { 8 * self.scale }
+    fn cell_width(&self) -> u64 { 8 }
+    fn cell_height(&self) -> u64 { 16 }
 
     fn clear(&mut self) {
         self.rectangle(0, 0, self.info.width, self.info.height, BLACK);
