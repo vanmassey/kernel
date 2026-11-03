@@ -1,9 +1,13 @@
 TARGET := x86_64-unknown-none
 KERNEL := target/$(TARGET)/debug/kernel
 ISO_ROOT := build/iso_root
-LIMINE_DIR ?= limine
+LIMINE_VERSION := v12.9.6
+LIMINE_ARCHIVE := build/limine-binary.tar.gz
+# Prefer an existing local Limine checkout; otherwise limine-setup downloads the
+# same pinned binary release used by the GitHub Actions boot-smoke job.
+LIMINE_DIR ?= $(shell find limine build/limine -type f -name limine-bios.sys -print -quit 2>/dev/null | sed 's|/limine-bios.sys$$||')
 
-.PHONY: all build check fmt verify clean iso run boot-test exception-test
+.PHONY: all build check fmt verify clean limine-setup iso run boot-test exception-test
 
 all: build
 
@@ -18,9 +22,27 @@ fmt:
 
 verify: fmt build
 
-iso: build
+# Prepare Limine automatically so "make run" works after the host tools and
+# Rust toolchain are installed. An explicit LIMINE_DIR still takes precedence.
+limine-setup:
+	@if [ -n "$(LIMINE_DIR)" ]; then \
+		test -f "$(LIMINE_DIR)/limine-bios.sys" || (echo "LIMINE_DIR does not contain limine-bios.sys: $(LIMINE_DIR)" && exit 1); \
+		make -C "$(LIMINE_DIR)"; \
+	else \
+		mkdir -p build/limine; \
+		curl --fail --location --silent --show-error \
+			https://github.com/Limine-Bootloader/Limine/releases/download/$(LIMINE_VERSION)/limine-binary.tar.gz \
+			--output "$(LIMINE_ARCHIVE)"; \
+		tar -xzf "$(LIMINE_ARCHIVE)" -C build/limine; \
+		LIMINE_DIR="$$(dirname "$$(find build/limine -type f -name limine-bios.sys -print -quit)")"; \
+		test -n "$$LIMINE_DIR" || (echo "Could not find limine-bios.sys in the downloaded Limine release." && exit 1); \
+		make -C "$$LIMINE_DIR"; \
+	fi
+	@test -x "$(if $(LIMINE_DIR),$(LIMINE_DIR),$(shell find build/limine -type f -name limine -perm -111 -print -quit))" || (echo "Limine utility was not built successfully." && exit 1)
+
+iso: build limine-setup
 	@test -f "$(KERNEL)" || (echo "Kernel ELF not found: $(KERNEL)" && exit 1)
-	@test -d "$(LIMINE_DIR)" || (echo "Set LIMINE_DIR to a directory containing Limine boot files and utility." && exit 1)
+	@test -f "$(LIMINE_DIR)/limine-bios.sys" || (echo "Limine BIOS files not found; check LIMINE_DIR." && exit 1)
 	rm -rf "$(ISO_ROOT)"
 	mkdir -p "$(ISO_ROOT)/boot/limine" "$(ISO_ROOT)/EFI/BOOT"
 	cp "$(KERNEL)" "$(ISO_ROOT)/boot/kernel.elf"
