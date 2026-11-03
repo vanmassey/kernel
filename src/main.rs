@@ -315,8 +315,29 @@ pub extern "C" fn _start() -> ! {
             let _ = writeln!(serial, "[display] No supported Limine RGB framebuffer");
         }
     }
-    let _ = writeln!(serial, "[boot] Milestone 0.12: general 4 KiB page mapping");
-    let _ = writeln!(serial, "[boot] Display initialisation complete; CPU halted");
+    let _ = writeln!(serial, "[boot] Milestone 0.13: legacy PIC and PIT timer");
+
+    // SAFETY: The IDT (including vector 32) is installed, and IF remains clear.
+    unsafe { arch::x86_64::interrupts::initialize_legacy_pic_and_pit() };
+    let _ = writeln!(serial, "[interrupt] PIC remapped; only IRQ0 unmasked");
+    let _ = writeln!(serial, "[timer] PIT configured at 100 Hz");
+
+    // Wait for one second of timer ticks. STI followed by HLT avoids a busy loop;
+    // the IRQ0 handler acknowledges the PIC and increments the atomic tick count.
+    // SAFETY: IRQ0 has a valid IDT gate and is the only unmasked legacy IRQ.
+    while arch::x86_64::interrupts::ticks() < 100 {
+        unsafe {
+            core::arch::asm!("sti", "hlt", options(nomem, nostack));
+        }
+    }
+    // SAFETY: Disable interrupts before reading the final count and halting.
+    unsafe { core::arch::asm!("cli", options(nomem, nostack)) };
+    let _ = writeln!(
+        serial,
+        "[timer] Interrupt self-test passed: {} ticks",
+        arch::x86_64::interrupts::ticks()
+    );
+    let _ = writeln!(serial, "[boot] Display and timer initialisation complete; CPU halted");
     halt()
 }
 
