@@ -102,13 +102,7 @@ impl Display {
         for (row, bits) in rows.iter().enumerate() {
             for column in 0..5 {
                 if bits & (1 << (4 - column)) != 0 {
-                    self.rectangle(
-                        x + 1 + column,
-                        y + row as u64 * 2 + 1,
-                        1,
-                        2,
-                        colour,
-                    );
+                    self.rectangle(x + 1 + column, y + row as u64 * 2 + 1, 1, 2, colour);
                 }
             }
         }
@@ -159,13 +153,7 @@ impl Display {
             );
         }
 
-        self.rectangle(
-            0,
-            self.info.height - amount,
-            self.info.width,
-            amount,
-            BLACK,
-        );
+        self.rectangle(0, self.info.height - amount, self.info.width, amount, BLACK);
         self.cursor_y = self.info.height.saturating_sub(amount);
     }
 
@@ -243,12 +231,7 @@ impl Display {
             "INITIALISING SYSTEM DEVICES...",
             WHITE,
         );
-        self.text(
-            margin,
-            9 * self.cell_height(),
-            "PLEASE WAIT.",
-            LIGHT_GREY,
-        );
+        self.text(margin, 9 * self.cell_height(), "PLEASE WAIT.", LIGHT_GREY);
 
         self.cursor_x = margin;
         self.cursor_y = 12 * self.cell_height();
@@ -349,15 +332,4 @@ fn glyph(character: char) -> [u8; 7] {
         ' ' => [0; 7],
         _ => [31, 17, 1, 2, 4, 0, 4],
     }
-}
-
-/// Draws the initial Sestina screen using the framebuffer supplied by Limine.
-///
-/// Returns the display dimensions when a supported RGB framebuffer is available.
-pub fn draw_boot_screen() -> Option<(u64, u64)> {
-    // SAFETY: Limine's framebuffer response is populated before kernel entry.
-    let info = unsafe { limine::framebuffer()? };
-    let mut display = Display::new(info)?;
-    display.draw_boot_screen();
-    Some((info.width, info.height))
 }
