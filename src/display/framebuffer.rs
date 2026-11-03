@@ -245,4 +245,3 @@ fn channel(value: u8, size: u8, shift: u8) -> u32 {
     let maximum = (1_u32 << size) - 1;
     ((u32::from(value) * maximum / 255) & maximum) << shift
 }
-
