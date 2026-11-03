@@ -3,6 +3,7 @@
 use core::fmt::{self, Write};
 
 use crate::arch::x86_64::cpu::CpuInfo;
+use crate::filesystem::{ramfs::RamFs, vfs::{FileSystem, NodeKind}};
 use crate::arch::x86_64::interrupts;
 use crate::arch::x86_64::keyboard::Keyboard;
 
@@ -105,6 +106,8 @@ impl Write for Console {
 pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
     let mut console = Console;
     let mut keyboard = Keyboard::new();
+    // RAMFS is session-local until a block-storage driver is available.
+    let mut filesystem = RamFs::new();
     let vendor = core::str::from_utf8(&cpu.vendor).unwrap_or("unknown");
     let mut line = [0u8; LINE_CAPACITY];
     let mut history_entries = [[0u8; LINE_CAPACITY]; HISTORY_CAPACITY];
@@ -290,12 +293,92 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
             "echo" => {
                 let _ = writeln!(console, "{}", args);
             }
+            "pwd" => {
+                let _ = writeln!(console, "/");
+            }
+            "ls" => {
+                let path = if args.is_empty() { "/" } else { args };
+                match filesystem.list_dir(path) {
+                    Ok(entries) => {
+                        for entry in entries {
+                            match entry.kind {
+                                NodeKind::Directory => {
+                                    let _ = writeln!(console, "{}/", entry.name);
+                                }
+                                NodeKind::File => {
+                                    let _ = writeln!(console, "{}", entry.name);
+                                }
+                            }
+                        }
+                    }
+                    Err(error) => print_fs_error(&mut console, error),
+                }
+            }
+            "mkdir" => {
+                if args.is_empty() {
+                    let _ = writeln!(console, "Usage: mkdir /PATH");
+                } else if let Err(error) = filesystem.create_dir(args) {
+                    print_fs_error(&mut console, error);
+                }
+            }
+            "touch" => {
+                if args.is_empty() {
+                    let _ = writeln!(console, "Usage: touch /PATH");
+                } else if let Err(error) = filesystem.create_file(args) {
+                    print_fs_error(&mut console, error);
+                }
+            }
+            "cat" => {
+                if args.is_empty() {
+                    let _ = writeln!(console, "Usage: cat /PATH");
+                } else {
+                    match filesystem.read_file(args) {
+                        Ok(contents) => match core::str::from_utf8(contents) {
+                            Ok(text) => {
+                                let _ = writeln!(console, "{}", text);
+                            }
+                            Err(_) => {
+                                let _ = writeln!(console, "File is not valid UTF-8 text.");
+                            }
+                        },
+                        Err(error) => print_fs_error(&mut console, error),
+                    }
+                }
+            }
+            "write" => {
+                let mut write_args = args.splitn(2, char::is_whitespace);
+                let path = write_args.next().unwrap_or("");
+                let contents = write_args.next().unwrap_or("").trim_start();
+                if path.is_empty() || contents.is_empty() {
+                    let _ = writeln!(console, "Usage: write /PATH TEXT");
+                } else {
+                    match filesystem.write_file(path, contents.as_bytes()) {
+                        Ok(()) => {
+                            let _ = writeln!(console, "Wrote {} bytes.", contents.len());
+                        }
+                        Err(error) => print_fs_error(&mut console, error),
+                    }
+                }
+            }
             _ => {
                 let _ = writeln!(console, "Unknown command: {}", name);
                 let _ = writeln!(console, "Type 'help' for a list of commands.");
             }
         }
     }
+}
+
+fn print_fs_error(console: &mut Console, error: crate::filesystem::vfs::FsError) {
+    use crate::filesystem::vfs::FsError;
+
+    let message = match error {
+        FsError::InvalidPath => "invalid path (use an absolute path; '..' is not supported)",
+        FsError::NotFound => "path not found",
+        FsError::AlreadyExists => "an entry with that name already exists",
+        FsError::NotDirectory => "a path component is not a directory",
+        FsError::IsDirectory => "the path is a directory, not a file",
+    };
+    let _ = writeln!(console, "Filesystem error: {}", message);
 }
 
 fn redraw_line(
@@ -338,6 +421,12 @@ fn print_help(console: &mut Console, topic: &str) {
             "  clear           Clear a compatible serial terminal"
         );
         let _ = writeln!(console, "  echo TEXT       Print TEXT");
+        let _ = writeln!(console, "  pwd             Show the current directory (/)");
+        let _ = writeln!(console, "  ls [PATH]       List a directory (default: /)");
+        let _ = writeln!(console, "  mkdir /PATH     Create a directory");
+        let _ = writeln!(console, "  touch /PATH     Create an empty file");
+        let _ = writeln!(console, "  cat /PATH       Print a text file");
+        let _ = writeln!(console, "  write /PATH TEXT  Replace a file's contents");
         return;
     }
 
@@ -392,6 +481,24 @@ fn print_help(console: &mut Console, topic: &str) {
         }
         "echo" => {
             let _ = writeln!(console, "echo TEXT - print TEXT to the console");
+        }
+        "pwd" => {
+            let _ = writeln!(console, "pwd - print the current directory (always / for now)");
+        }
+        "ls" => {
+            let _ = writeln!(console, "ls [PATH] - list a directory; defaults to /");
+        }
+        "mkdir" => {
+            let _ = writeln!(console, "mkdir /PATH - create a directory");
+        }
+        "touch" => {
+            let _ = writeln!(console, "touch /PATH - create an empty file");
+        }
+        "cat" => {
+            let _ = writeln!(console, "cat /PATH - print a UTF-8 text file");
+        }
+        "write" => {
+            let _ = writeln!(console, "write /PATH TEXT - replace a file's contents");
         }
         _ => {
             let _ = writeln!(console, "No help available for '{}'.", topic);
