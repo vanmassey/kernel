@@ -286,7 +286,7 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
                 }
             }
             "clear" => {
-                let _ = write!(console, "\\x1b[2J\\x1b[H");
+                let _ = write!(console, "\x1b[2J\x1b[H");
             }
             "echo" => {
                 let _ = writeln!(console, "{}", args);
@@ -334,10 +334,7 @@ fn print_help(console: &mut Console, topic: &str) {
         let _ = writeln!(console, "  uptime          Show time since shell startup");
         let _ = writeln!(console, "  ticks           Show hardware timer ticks");
         let _ = writeln!(console, "  history         Show the last eight commands");
-        let _ = writeln!(
-            console,
-            "  clear           Clear the screen"
-        );
+        let _ = writeln!(console, "  clear           Clear the screen");
         let _ = writeln!(console, "  echo TEXT       Print TEXT");
         return;
     }
