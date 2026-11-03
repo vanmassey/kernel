@@ -117,7 +117,7 @@ impl Display {
         self.rectangle(0, 0, self.info.width, self.info.height, background);
 
         let lines: [(&str, Colour); 20] = [
-            ("Sestina 0.12", text_colour),
+            ("Sestina 0.14", text_colour),
             ("", text_colour),
             ("Booting kernel...", muted),
             ("Limine boot protocol detected", success),
