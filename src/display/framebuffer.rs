@@ -111,15 +111,6 @@ impl Display {
         }
     }
 
-    fn text(&mut self, x: u64, y: u64, value: &str, colour: Colour) {
-        let mut cursor = x;
-
-        for character in value.chars() {
-            self.draw_character(cursor, y, character, colour);
-            cursor = cursor.saturating_add(self.cell_width());
-        }
-    }
-
     fn cell_width(&self) -> u64 {
         CHARACTER_WIDTH
     }
