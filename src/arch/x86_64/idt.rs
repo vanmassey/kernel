@@ -113,6 +113,23 @@ global_asm!(
     "cli",
     "hlt",
     "jmp 1b",
+    ".global x86_timer_irq_stub",
+    ".type x86_timer_irq_stub, @function",
+    "x86_timer_irq_stub:",
+    "cld",
+    "push rax", "push rbx", "push rcx", "push rdx", "push rbp", "push rsi", "push rdi",
+    "push r8", "push r9", "push r10", "push r11", "push r12", "push r13", "push r14", "push r15",
+    "mov r13, rsp",
+    "sub rsp, 528",
+    "and rsp, -16",
+    "fxsave64 [rsp]",
+    "mov r12, rsp",
+    "call kernel_timer_interrupt",
+    "fxrstor64 [r12]",
+    "mov rsp, r13",
+    "pop r15", "pop r14", "pop r13", "pop r12", "pop r11", "pop r10", "pop r9", "pop r8",
+    "pop rdi", "pop rsi", "pop rbp", "pop rdx", "pop rcx", "pop rbx", "pop rax",
+    "iretq",
     ".section .rodata",
     ".align 8",
     ".global x86_exception_stub_table",
@@ -130,6 +147,7 @@ global_asm!(
 extern "C" {
     static x86_exception_stub_table: [u64; CPU_EXCEPTION_COUNT];
     fn x86_exception_halt_stub();
+    fn x86_timer_irq_stub();
 }
 
 /// Installs an IDT with dedicated diagnostic stubs for CPU exceptions 0–31.
@@ -140,6 +158,7 @@ extern "C" {
 /// kernel must remain in the same code segment while this IDT is active.
 pub unsafe fn initialize() {
     let emergency_handler = x86_exception_halt_stub as *const () as usize as u64;
+    let timer_handler = x86_timer_irq_stub as *const () as usize as u64;
     let selector: u16;
 
     // SAFETY: Reading CS obtains the active code-segment selector for IDT gates.
@@ -171,6 +190,15 @@ pub unsafe fn initialize() {
                 IdtEntry::interrupt_gate(handler, selector),
             );
         }
+    }
+
+    // IRQ0 is delivered on vector 32 after the legacy PIC is remapped.
+    // SAFETY: The assembly entry preserves general registers and returns with IRETQ.
+    unsafe {
+        ptr::write(
+            idt_ptr.add(32),
+            IdtEntry::interrupt_gate(timer_handler, selector),
+        );
     }
 
     let descriptor = Idtr {

@@ -315,9 +315,67 @@ pub extern "C" fn _start() -> ! {
             let _ = writeln!(serial, "[display] No supported Limine RGB framebuffer");
         }
     }
-    let _ = writeln!(serial, "[boot] Milestone 0.12: general 4 KiB page mapping");
-    let _ = writeln!(serial, "[boot] Display initialisation complete; CPU halted");
-    halt()
+    let _ = writeln!(
+        serial,
+        "[boot] Milestone 0.14: timer and PS/2 keyboard polling"
+    );
+
+    // SAFETY: The IDT (including vector 32) is installed, and IF remains clear.
+    unsafe { arch::x86_64::interrupts::initialize_legacy_pic_and_pit() };
+    let _ = writeln!(serial, "[interrupt] PIC remapped; only IRQ0 unmasked");
+    let _ = writeln!(serial, "[timer] PIT configured at 100 Hz");
+
+    let mut keyboard = arch::x86_64::keyboard::Keyboard::new();
+    let _ = writeln!(
+        serial,
+        "[keyboard] PS/2 polling interface ready; IRQ1 remains masked"
+    );
+    let _ = writeln!(
+        serial,
+        "[keyboard] Scancode decoder self-test: {}",
+        if arch::x86_64::keyboard::Keyboard::decoder_self_test() {
+            "passed"
+        } else {
+            "FAILED"
+        }
+    );
+
+    // Polling continues after the timer self-test, with the PIT waking the
+    // processor regularly. IRQ1 remains masked throughout this first driver stage.
+    while arch::x86_64::interrupts::ticks() < 100 {
+        unsafe {
+            core::arch::asm!("sti", "hlt", options(nomem, nostack));
+        }
+    }
+    // SAFETY: Disable interrupts while reporting the completed timer self-test.
+    unsafe { core::arch::asm!("cli", options(nomem, nostack)) };
+    let _ = writeln!(
+        serial,
+        "[timer] Interrupt self-test passed: {} ticks",
+        arch::x86_64::interrupts::ticks()
+    );
+    let _ = writeln!(serial, "[keyboard] Input polling loop active");
+
+    loop {
+        if let Some(event) = keyboard.poll_event() {
+            if event.pressed {
+                if let Some(character) = event.ascii {
+                    let _ = writeln!(serial, "[keyboard] key: {}", char::from(character));
+                } else {
+                    let _ = writeln!(
+                        serial,
+                        "[keyboard] key event: scancode {:#04x}, extended={}",
+                        event.scancode, event.extended
+                    );
+                }
+            }
+        }
+
+        // STI followed by HLT avoids a busy loop; the PIT provides periodic wake-ups.
+        unsafe {
+            core::arch::asm!("sti", "hlt", options(nomem, nostack));
+        }
+    }
 }
 
 fn additional_page_mapping_self_test(
@@ -360,7 +418,7 @@ fn additional_page_mapping_self_test(
     }
     // SAFETY: The virtual address and HHDM address alias the same reserved physical frame.
     let mapped = unsafe { core::ptr::read_volatile(virtual_address as *const u64) };
-    // SAFETY: The direct-map address was validated above and refers to the same frame.
+    // SAFETY: The direct-map address was validated above and refers to the same reserved frame.
     let direct = unsafe { core::ptr::read_volatile(direct_address.as_u64() as *const u64) };
     mapped == PATTERN && direct == PATTERN
 }

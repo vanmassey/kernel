@@ -46,7 +46,13 @@ boot-test: iso
 	@grep -F "[memory] New PML4 active:" build/qemu-serial.log
 	@grep -F "[memory] 4 KiB page mapping self-test: passed" build/qemu-serial.log
 	@grep -F "[memory] General 4 KiB mapper self-test: passed" build/qemu-serial.log
-	@grep -F "[boot] Milestone 0.12: general 4 KiB page mapping" build/qemu-serial.log
+	@grep -F "[boot] Milestone 0.14: timer and PS/2 keyboard polling" build/qemu-serial.log
+	@grep -F "[interrupt] PIC remapped; only IRQ0 unmasked" build/qemu-serial.log
+	@grep -F "[timer] PIT configured at 100 Hz" build/qemu-serial.log
+	@grep -F "[timer] Interrupt self-test passed:" build/qemu-serial.log
+	@grep -F "[keyboard] PS/2 polling interface ready; IRQ1 remains masked" build/qemu-serial.log
+	@grep -F "[keyboard] Scancode decoder self-test: passed" build/qemu-serial.log
+	@grep -F "[keyboard] Input polling loop active" build/qemu-serial.log
 	@grep -F "[display] Framebuffer online:" build/qemu-serial.log
 	@echo "QEMU boot smoke test passed."
 
