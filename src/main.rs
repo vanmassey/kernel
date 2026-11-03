@@ -337,7 +337,10 @@ pub extern "C" fn _start() -> ! {
         "[timer] Interrupt self-test passed: {} ticks",
         arch::x86_64::interrupts::ticks()
     );
-    let _ = writeln!(serial, "[boot] Display and timer initialisation complete; CPU halted");
+    let _ = writeln!(
+        serial,
+        "[boot] Display and timer initialisation complete; CPU halted"
+    );
     halt()
 }
 
