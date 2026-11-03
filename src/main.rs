@@ -315,7 +315,10 @@ pub extern "C" fn _start() -> ! {
             let _ = writeln!(serial, "[display] No supported Limine RGB framebuffer");
         }
     }
-    let _ = writeln!(serial, "[boot] Milestone 0.14: timer and PS/2 keyboard polling");
+    let _ = writeln!(
+        serial,
+        "[boot] Milestone 0.14: timer and PS/2 keyboard polling"
+    );
 
     // SAFETY: The IDT (including vector 32) is installed, and IF remains clear.
     unsafe { arch::x86_64::interrupts::initialize_legacy_pic_and_pit() };
