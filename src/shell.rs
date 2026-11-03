@@ -131,7 +131,10 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
                 let _ = writeln!(console, "  echo TEXT  Print TEXT");
             }
             "about" => {
-                let _ = writeln!(console, "Sestina is an experimental x86_64 operating-system kernel.");
+                let _ = writeln!(
+                    console,
+                    "Sestina is an experimental x86_64 operating-system kernel."
+                );
                 let _ = writeln!(console, "It is written in Rust and boots through Limine.");
             }
             "uname" => {
@@ -142,9 +145,21 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
             }
             "cpu" => {
                 let _ = writeln!(console, "Vendor: {}", vendor);
-                let _ = writeln!(console, "SSE2: {}, APIC: {}, x2APIC: {}", cpu.has_sse2, cpu.has_apic, cpu.has_x2apic);
-                let _ = writeln!(console, "NX: {}, 1 GiB pages: {}", cpu.has_nx, cpu.has_1gib_pages);
-                let _ = writeln!(console, "SYSCALL: {}, long mode: {}", cpu.has_syscall, cpu.has_long_mode);
+                let _ = writeln!(
+                    console,
+                    "SSE2: {}, APIC: {}, x2APIC: {}",
+                    cpu.has_sse2, cpu.has_apic, cpu.has_x2apic
+                );
+                let _ = writeln!(
+                    console,
+                    "NX: {}, 1 GiB pages: {}",
+                    cpu.has_nx, cpu.has_1gib_pages
+                );
+                let _ = writeln!(
+                    console,
+                    "SYSCALL: {}, long mode: {}",
+                    cpu.has_syscall, cpu.has_long_mode
+                );
             }
             "uptime" => {
                 let elapsed = interrupts::ticks().wrapping_sub(start_ticks) / 100;
