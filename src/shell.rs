@@ -232,10 +232,18 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
                 let _ = writeln!(console, "sestina");
             }
             "uname" => {
-                let _ = writeln!(console, "Sestina sestina {} x86_64", env!("CARGO_PKG_VERSION"));
+                let _ = writeln!(
+                    console,
+                    "Sestina sestina {} x86_64",
+                    env!("CARGO_PKG_VERSION")
+                );
             }
             "version" | "ver" => {
-                let _ = writeln!(console, "Sestina kernel {} (development build)", env!("CARGO_PKG_VERSION"));
+                let _ = writeln!(
+                    console,
+                    "Sestina kernel {} (development build)",
+                    env!("CARGO_PKG_VERSION")
+                );
             }
             "sysinfo" | "status" => {
                 let _ = writeln!(console, "System: Sestina x86_64");
@@ -315,7 +323,10 @@ fn print_help(console: &mut Console, topic: &str) {
         let _ = writeln!(console, "  commands        Alias for help");
         let _ = writeln!(console, "  about           Describe Sestina");
         let _ = writeln!(console, "  hostname        Show the system hostname");
-        let _ = writeln!(console, "  uname           Show kernel name, version and architecture");
+        let _ = writeln!(
+            console,
+            "  uname           Show kernel name, version and architecture"
+        );
         let _ = writeln!(console, "  version, ver    Show kernel version");
         let _ = writeln!(console, "  cpu             Show processor information");
         let _ = writeln!(console, "  sysinfo, status Show a system summary");
@@ -350,7 +361,10 @@ fn print_help(console: &mut Console, topic: &str) {
             let _ = writeln!(console, "hostname - print the system hostname");
         }
         "sysinfo" | "status" => {
-            let _ = writeln!(console, "sysinfo - show kernel, CPU, timer and uptime information");
+            let _ = writeln!(
+                console,
+                "sysinfo - show kernel, CPU, timer and uptime information"
+            );
         }
         "uname" => {
             let _ = writeln!(console, "uname - print the kernel name and architecture");
@@ -394,8 +408,16 @@ fn print_uptime(console: &mut Console, start_ticks: u64) {
     let seconds = total_seconds % 60;
 
     if days > 0 {
-        let _ = writeln!(console, "Uptime: {}d {:02}:{:02}:{:02}", days, hours, minutes, seconds);
+        let _ = writeln!(
+            console,
+            "Uptime: {}d {:02}:{:02}:{:02}",
+            days, hours, minutes, seconds
+        );
     } else {
-        let _ = writeln!(console, "Uptime: {:02}:{:02}:{:02}", hours, minutes, seconds);
+        let _ = writeln!(
+            console,
+            "Uptime: {:02}:{:02}:{:02}",
+            hours, minutes, seconds
+        );
     }
 }
