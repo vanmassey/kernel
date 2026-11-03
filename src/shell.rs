@@ -215,11 +215,12 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
             history_count += 1;
         }
 
-        let (name, args) = command.split_once(' ').unwrap_or((command, ""));
-        let args = args.trim();
+        let mut parts = command.splitn(2, char::is_whitespace);
+        let name = parts.next().unwrap_or("");
+        let args = parts.next().unwrap_or("").trim();
 
         match name {
-            "help" => print_help(&mut console, args),
+            "help" | "commands" => print_help(&mut console, args),
             "about" => {
                 let _ = writeln!(
                     console,
@@ -227,11 +228,29 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
                 );
                 let _ = writeln!(console, "It is written in Rust and boots through Limine.");
             }
-            "uname" => {
-                let _ = writeln!(console, "Sestina sestina 0.1.0 x86_64");
+            "hostname" => {
+                let _ = writeln!(console, "sestina");
             }
-            "version" => {
-                let _ = writeln!(console, "Sestina kernel 0.1.0 (development build)");
+            "uname" => {
+                let _ = writeln!(
+                    console,
+                    "Sestina sestina {} x86_64",
+                    env!("CARGO_PKG_VERSION")
+                );
+            }
+            "version" | "ver" => {
+                let _ = writeln!(
+                    console,
+                    "Sestina kernel {} (development build)",
+                    env!("CARGO_PKG_VERSION")
+                );
+            }
+            "sysinfo" | "status" => {
+                let _ = writeln!(console, "System: Sestina x86_64");
+                let _ = writeln!(console, "Kernel: {}", env!("CARGO_PKG_VERSION"));
+                let _ = writeln!(console, "CPU: {}", vendor);
+                let _ = writeln!(console, "Timer: 100 Hz, {} ticks", interrupts::ticks());
+                print_uptime(&mut console, start_ticks);
             }
             "cpu" => {
                 let _ = writeln!(console, "Vendor: {}", vendor);
@@ -251,10 +270,7 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
                     cpu.has_syscall, cpu.has_long_mode
                 );
             }
-            "uptime" => {
-                let elapsed = interrupts::ticks().wrapping_sub(start_ticks) / 100;
-                let _ = writeln!(console, "Uptime: {} seconds", elapsed);
-            }
+            "uptime" => print_uptime(&mut console, start_ticks),
             "ticks" => {
                 let _ = writeln!(console, "Timer ticks: {}", interrupts::ticks());
             }
@@ -304,10 +320,16 @@ fn print_help(console: &mut Console, topic: &str) {
     if topic.is_empty() {
         let _ = writeln!(console, "Available commands:");
         let _ = writeln!(console, "  help [COMMAND]  Show command help");
+        let _ = writeln!(console, "  commands        Alias for help");
         let _ = writeln!(console, "  about           Describe Sestina");
-        let _ = writeln!(console, "  uname           Show kernel and architecture");
-        let _ = writeln!(console, "  version         Show kernel version");
+        let _ = writeln!(console, "  hostname        Show the system hostname");
+        let _ = writeln!(
+            console,
+            "  uname           Show kernel name, version and architecture"
+        );
+        let _ = writeln!(console, "  version, ver    Show kernel version");
         let _ = writeln!(console, "  cpu             Show processor information");
+        let _ = writeln!(console, "  sysinfo, status Show a system summary");
         let _ = writeln!(console, "  uptime          Show time since shell startup");
         let _ = writeln!(console, "  ticks           Show hardware timer ticks");
         let _ = writeln!(console, "  history         Show the last eight commands");
@@ -326,16 +348,28 @@ fn print_help(console: &mut Console, topic: &str) {
                 "help [COMMAND] - list commands or explain one command"
             );
         }
+        "commands" => {
+            let _ = writeln!(console, "commands - list the available shell commands");
+        }
         "about" => {
             let _ = writeln!(
                 console,
                 "about - describe the Sestina operating-system project"
             );
         }
+        "hostname" => {
+            let _ = writeln!(console, "hostname - print the system hostname");
+        }
+        "sysinfo" | "status" => {
+            let _ = writeln!(
+                console,
+                "sysinfo - show kernel, CPU, timer and uptime information"
+            );
+        }
         "uname" => {
             let _ = writeln!(console, "uname - print the kernel name and architecture");
         }
-        "version" => {
+        "version" | "ver" => {
             let _ = writeln!(console, "version - print the kernel version");
         }
         "cpu" => {
@@ -362,5 +396,28 @@ fn print_help(console: &mut Console, topic: &str) {
         _ => {
             let _ = writeln!(console, "No help available for '{}'.", topic);
         }
+    }
+}
+
+fn print_uptime(console: &mut Console, start_ticks: u64) {
+    let elapsed_ticks = interrupts::ticks().wrapping_sub(start_ticks);
+    let total_seconds = elapsed_ticks / 100;
+    let days = total_seconds / 86_400;
+    let hours = (total_seconds / 3_600) % 24;
+    let minutes = (total_seconds / 60) % 60;
+    let seconds = total_seconds % 60;
+
+    if days > 0 {
+        let _ = writeln!(
+            console,
+            "Uptime: {}d {:02}:{:02}:{:02}",
+            days, hours, minutes, seconds
+        );
+    } else {
+        let _ = writeln!(
+            console,
+            "Uptime: {:02}:{:02}:{:02}",
+            hours, minutes, seconds
+        );
     }
 }
