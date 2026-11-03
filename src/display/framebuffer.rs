@@ -1,6 +1,8 @@
 use crate::boot::limine::{self, FramebufferInfo};
 
 const RGB_MEMORY_MODEL: u8 = 1;
+const CHARACTER_WIDTH: u64 = 8;
+const CHARACTER_HEIGHT: u64 = 16;
 const BLACK: Colour = Colour(0, 0, 0);
 const LIGHT_GREY: Colour = Colour(192, 192, 192);
 const WHITE: Colour = Colour(255, 255, 255);
@@ -21,30 +23,59 @@ static mut DISPLAY: Option<Display> = None;
 impl Display {
     fn new(info: FramebufferInfo) -> Option<Self> {
         if info.address.is_null()
-            || info.width < 320 || info.height < 200
-            || info.width > 8192 || info.height > 8192
-            || info.bpp != 32 || info.memory_model != RGB_MEMORY_MODEL
+            || info.width < 320
+            || info.height < 200
+            || info.width > 8192
+            || info.height > 8192
+            || info.bpp != 32
+            || info.memory_model != RGB_MEMORY_MODEL
             || info.pitch < info.width.checked_mul(4)?
-            || info.pitch > 65_536 || info.pitch % 4 != 0
+            || info.pitch > 65_536
+            || info.pitch % 4 != 0
             || !valid_mask(info.red_mask_size, info.red_mask_shift)
             || !valid_mask(info.green_mask_size, info.green_mask_shift)
             || !valid_mask(info.blue_mask_size, info.blue_mask_shift)
-        { return None; }
+        {
+            return None;
+        }
 
-        Some(Self { info, cursor_x: 0, cursor_y: 0, escape_state: 0 })
+        Some(Self {
+            info,
+            cursor_x: 0,
+            cursor_y: 0,
+            escape_state: 0,
+        })
     }
 
     fn colour_value(&self, colour: Colour) -> u32 {
         channel(colour.0, self.info.red_mask_size, self.info.red_mask_shift)
-            | channel(colour.1, self.info.green_mask_size, self.info.green_mask_shift)
-            | channel(colour.2, self.info.blue_mask_size, self.info.blue_mask_shift)
+            | channel(
+                colour.1,
+                self.info.green_mask_size,
+                self.info.green_mask_shift,
+            )
+            | channel(
+                colour.2,
+                self.info.blue_mask_size,
+                self.info.blue_mask_shift,
+            )
     }
 
     fn pixel(&mut self, x: u64, y: u64, colour: Colour) {
-        if x >= self.info.width || y >= self.info.height { return; }
-        let Some(row) = y.checked_mul(self.info.pitch) else { return };
-        let Some(column) = x.checked_mul(4) else { return };
-        let Some(offset) = row.checked_add(column) else { return };
+        if x >= self.info.width || y >= self.info.height {
+            return;
+        }
+
+        let Some(row) = y.checked_mul(self.info.pitch) else {
+            return;
+        };
+        let Some(column) = x.checked_mul(4) else {
+            return;
+        };
+        let Some(offset) = row.checked_add(column) else {
+            return;
+        };
+
         // SAFETY: Coordinates are bounded by the validated Limine framebuffer.
         unsafe {
             core::ptr::write_volatile(
@@ -57,18 +88,27 @@ impl Display {
     fn rectangle(&mut self, x: u64, y: u64, width: u64, height: u64, colour: Colour) {
         let right = x.saturating_add(width).min(self.info.width);
         let bottom = y.saturating_add(height).min(self.info.height);
+
         for py in y.min(self.info.height)..bottom {
-            for px in x.min(self.info.width)..right { self.pixel(px, py, colour); }
+            for px in x.min(self.info.width)..right {
+                self.pixel(px, py, colour);
+            }
         }
     }
 
     fn draw_character(&mut self, x: u64, y: u64, character: char, colour: Colour) {
         let rows = glyph(character.to_ascii_uppercase());
+
         for (row, bits) in rows.iter().enumerate() {
             for column in 0..5 {
                 if bits & (1 << (4 - column)) != 0 {
-                    self.rectangle(x + 1 + column, y + row as u64 * 2 + 1,
-                        1, 2, colour);
+                    self.rectangle(
+                        x + 1 + column,
+                        y + row as u64 * 2 + 1,
+                        1,
+                        2,
+                        colour,
+                    );
                 }
             }
         }
@@ -76,14 +116,20 @@ impl Display {
 
     fn text(&mut self, x: u64, y: u64, value: &str, colour: Colour) {
         let mut cursor = x;
+
         for character in value.chars() {
             self.draw_character(cursor, y, character, colour);
             cursor = cursor.saturating_add(self.cell_width());
         }
     }
 
-    fn cell_width(&self) -> u64 { 8 }
-    fn cell_height(&self) -> u64 { 16 }
+    fn cell_width(&self) -> u64 {
+        CHARACTER_WIDTH
+    }
+
+    fn cell_height(&self) -> u64 {
+        CHARACTER_HEIGHT
+    }
 
     fn clear(&mut self) {
         self.rectangle(0, 0, self.info.width, self.info.height, BLACK);
@@ -94,18 +140,32 @@ impl Display {
     fn newline(&mut self) {
         self.cursor_x = 0;
         self.cursor_y = self.cursor_y.saturating_add(self.cell_height());
-        if self.cursor_y + self.cell_height() > self.info.height { self.scroll(); }
+
+        if self.cursor_y + self.cell_height() > self.info.height {
+            self.scroll();
+        }
     }
 
     fn scroll(&mut self) {
         let amount = self.cell_height().min(self.info.height);
         let bytes = (self.info.height - amount).saturating_mul(self.info.pitch) as usize;
+
         // SAFETY: Both ranges are inside the framebuffer; ptr::copy permits overlap.
         unsafe {
-            core::ptr::copy(self.info.address.add((amount * self.info.pitch) as usize),
-                self.info.address, bytes);
+            core::ptr::copy(
+                self.info.address.add((amount * self.info.pitch) as usize),
+                self.info.address,
+                bytes,
+            );
         }
-        self.rectangle(0, self.info.height - amount, self.info.width, amount, BLACK);
+
+        self.rectangle(
+            0,
+            self.info.height - amount,
+            self.info.width,
+            amount,
+            BLACK,
+        );
         self.cursor_y = self.info.height.saturating_sub(amount);
     }
 
@@ -114,12 +174,20 @@ impl Display {
             self.escape_state = match (self.escape_state, byte) {
                 (1, b'[') => 2,
                 (2, b'2') => 3,
-                (2, b'H') => { self.cursor_x = 0; self.cursor_y = 0; 0 }
-                (3, b'J') => { self.clear(); 0 }
+                (2, b'H') => {
+                    self.cursor_x = 0;
+                    self.cursor_y = 0;
+                    0
+                }
+                (3, b'J') => {
+                    self.clear();
+                    0
+                }
                 _ => 0,
             };
             return;
         }
+
         match byte {
             0x1b => self.escape_state = 1,
             b'\r' => self.cursor_x = 0,
@@ -127,15 +195,27 @@ impl Display {
             8 | 127 => {
                 if self.cursor_x >= self.cell_width() {
                     self.cursor_x -= self.cell_width();
-                    self.rectangle(self.cursor_x, self.cursor_y, self.cell_width(),
-                        self.cell_height(), BLACK);
+                    self.rectangle(
+                        self.cursor_x,
+                        self.cursor_y,
+                        self.cell_width(),
+                        self.cell_height(),
+                        BLACK,
+                    );
                 }
             }
-            b'\t' => { for _ in 0..4 { self.put_byte(b' '); } }
+            b'\t' => {
+                for _ in 0..4 {
+                    self.put_byte(b' ');
+                }
+            }
             0x20..=0x7e => {
                 self.draw_character(self.cursor_x, self.cursor_y, byte as char, LIGHT_GREY);
                 self.cursor_x = self.cursor_x.saturating_add(self.cell_width());
-                if self.cursor_x + self.cell_width() > self.info.width { self.newline(); }
+
+                if self.cursor_x + self.cell_width() > self.info.width {
+                    self.newline();
+                }
             }
             _ => {}
         }
@@ -144,11 +224,32 @@ impl Display {
     fn draw_boot_screen(&mut self) {
         self.clear();
         let margin = 2 * self.cell_width();
-        self.text(margin, 2 * self.cell_height(),
-            "SESTINA OPERATING SYSTEM  VERSION 0.14", CYAN);
-        self.text(margin, 4 * self.cell_height(), "(C) 2026 SESTINA PROJECT", LIGHT_GREY);
-        self.text(margin, 7 * self.cell_height(), "SYSTEM INITIALISATION COMPLETE.", WHITE);
-        self.text(margin, 9 * self.cell_height(), "STARTING COMMAND INTERPRETER...", LIGHT_GREY);
+
+        self.text(
+            margin,
+            2 * self.cell_height(),
+            "SESTINA OPERATING SYSTEM  VERSION 0.14",
+            CYAN,
+        );
+        self.text(
+            margin,
+            4 * self.cell_height(),
+            "COPYRIGHT 2026 SESTINA PROJECT",
+            LIGHT_GREY,
+        );
+        self.text(
+            margin,
+            7 * self.cell_height(),
+            "INITIALISING SYSTEM DEVICES...",
+            WHITE,
+        );
+        self.text(
+            margin,
+            9 * self.cell_height(),
+            "PLEASE WAIT.",
+            LIGHT_GREY,
+        );
+
         self.cursor_x = margin;
         self.cursor_y = 12 * self.cell_height();
     }
@@ -160,19 +261,25 @@ pub fn write_byte(byte: u8) {
     unsafe {
         let slot = core::ptr::addr_of_mut!(DISPLAY);
         if let Some(slot) = slot.as_mut() {
-            if let Some(display) = slot.as_mut() { display.put_byte(byte); }
+            if let Some(display) = slot.as_mut() {
+                display.put_byte(byte);
+            }
         }
     }
 }
 
-/// Draws the DOS-style Sestina console using Limine's framebuffer.
+/// Draws the DOS-style Sestina console using the framebuffer supplied by Limine.
 pub fn draw_boot_screen() -> Option<(u64, u64)> {
     // SAFETY: Limine populates the framebuffer response before kernel entry.
     let info = unsafe { limine::framebuffer()? };
     let mut display = Display::new(info)?;
     display.draw_boot_screen();
+
     // SAFETY: Installed before the shell starts; no concurrent display access exists yet.
-    unsafe { core::ptr::write(core::ptr::addr_of_mut!(DISPLAY), Some(display)); }
+    unsafe {
+        core::ptr::write(core::ptr::addr_of_mut!(DISPLAY), Some(display));
+    }
+
     Some((info.width, info.height))
 }
 
