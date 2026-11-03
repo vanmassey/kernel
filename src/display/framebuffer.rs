@@ -205,7 +205,9 @@ impl Display {
 
     fn draw_boot_screen(&mut self) {
         // Begin with a clean text console; boot diagnostics remain on serial.
-        self.clear();}
+        self.clear();
+    }
+}
 
 /// Writes one byte to the active framebuffer text console.
 pub fn write_byte(byte: u8) {
