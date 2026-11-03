@@ -8,7 +8,7 @@ LIMINE_DIR ?=
 # this finds the actual directory even when the archive contains a versioned folder.
 LIMINE_PATH = $(if $(LIMINE_DIR),$(LIMINE_DIR),$(shell find limine build/limine -type f -name limine-bios.sys -print -quit 2>/dev/null | sed 's|/limine-bios.sys$$||'))
 
-.PHONY: all build check fmt verify clean limine-setup iso run boot-test exception-test
+.PHONY: all build check fmt verify clean limine-setup iso run demo boot-test exception-test
 
 all: build
 
@@ -56,6 +56,13 @@ iso: build limine-setup
 
 run: iso
 	qemu-system-x86_64 -M q35 -m 256M -cdrom build/kernel.iso -boot order=d -serial stdio -no-reboot -no-shutdown
+
+# Full first-demonstration path: verify, boot-test, exception-test, then launch QEMU.
+demo:
+	$(MAKE) verify
+	$(MAKE) boot-test
+	$(MAKE) exception-test FEATURES=exception-test
+	$(MAKE) run
 
 boot-test: iso
 	@set +e; timeout 15s qemu-system-x86_64 -M q35 -m 256M -cdrom build/kernel.iso -boot order=d -serial stdio -display none -no-reboot -no-shutdown > build/qemu-serial.log 2>&1; status=$$?; set -e; if [ $$status -ne 124 ] && [ $$status -ne 0 ]; then cat build/qemu-serial.log; exit $$status; fi
