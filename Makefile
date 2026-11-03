@@ -48,6 +48,7 @@ boot-test: iso
 	@grep -F "[memory] Kernel heap ready:" build/qemu-serial.log
 	@grep -F "[memory] Heap allocator self-test: passed" build/qemu-serial.log
 	@grep -F "[memory] Rust Vec self-test: passed" build/qemu-serial.log
+	@grep -F "[filesystem] RAMFS self-test: passed" build/qemu-serial.log
 	@grep -F "[memory] New PML4 active:" build/qemu-serial.log
 	@grep -F "[memory] 4 KiB page mapping self-test: passed" build/qemu-serial.log
 	@grep -F "[memory] General 4 KiB mapper self-test: passed" build/qemu-serial.log

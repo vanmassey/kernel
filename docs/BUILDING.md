@@ -375,15 +375,17 @@ with the required components and runs:
 make verify
 ```
 
-The `boot-smoke` job is conditional: it runs only when the workflow is
-started manually with the `workflow_dispatch` event. It installs QEMU and
-xorriso, downloads the pinned Limine v12.9.6 binary release, builds the ISO,
-runs `make boot-test`, and then runs `make exception-test`.
+The `boot-smoke` job runs for pull requests and when the workflow is started
+manually with the `workflow_dispatch` event. It installs QEMU and xorriso,
+downloads the pinned Limine v12.9.6 binary release, builds the ISO, runs
+`make boot-test`, and then runs `make exception-test`.
 
-Therefore, a green pull-request build confirms formatting and compilation.
-It does not, by itself, confirm that the ISO boots in QEMU.
+A green pull-request build job confirms formatting and compilation. The
+separate boot-smoke job additionally checks that the ISO reaches the expected
+startup milestones in QEMU, including the RAMFS self-test. The exception test
+checks the controlled breakpoint diagnostic path.
 
-To run the manual workflow from GitHub:
+To run the workflow manually from GitHub:
 
 1. Open the repository's **Actions** tab.
 2. Select **Kernel CI**.
@@ -500,10 +502,10 @@ The following are implementation limitations, not build errors:
   private 4 KiB mapping. Existing kernel page tables are shared; this is not
   yet process isolation.
 - The PS/2 keyboard is currently polled; IRQ1 remains masked.
-- Timer interrupts are configured through the PIT and PIC. On the current
-  main branch, maskable interrupts are disabled before the shell is entered,
-  so the timer does not continue ticking while the shell waits for input.
-  The timer-interrupts-in-shell change is being developed separately.
+- Timer interrupts are configured through the PIT and PIC. The shell enables
+  maskable interrupts so the timer continues ticking while it waits for input.
+- The RAMFS is volatile, has no disk-backed persistence, and currently has
+  no shell commands or deletion/rename operations.
 - The current shell and device support are early kernel facilities, not a
   complete user-space operating environment.
 
