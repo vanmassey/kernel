@@ -5,8 +5,6 @@ const CHARACTER_WIDTH: u64 = 8;
 const CHARACTER_HEIGHT: u64 = 16;
 const BLACK: Colour = Colour(0, 0, 0);
 const LIGHT_GREY: Colour = Colour(192, 192, 192);
-const WHITE: Colour = Colour(255, 255, 255);
-const CYAN: Colour = Colour(85, 255, 255);
 
 #[derive(Clone, Copy)]
 struct Colour(u8, u8, u8);
@@ -97,23 +95,19 @@ impl Display {
     }
 
     fn draw_character(&mut self, x: u64, y: u64, character: char, colour: Colour) {
-        let rows = glyph(character.to_ascii_uppercase());
+        let code = character as usize;
+        let glyph = if (32..=126).contains(&code) {
+            &super::vga_font::FONT[code - 32]
+        } else {
+            &super::vga_font::FONT[0]
+        };
 
-        for (row, bits) in rows.iter().enumerate() {
-            for column in 0..5 {
-                if bits & (1 << (4 - column)) != 0 {
-                    self.rectangle(x + 1 + column, y + row as u64 * 2 + 1, 1, 2, colour);
+        for (row, bits) in glyph.iter().enumerate() {
+            for column in 0..8 {
+                if bits & (1 << column) != 0 {
+                    self.pixel(x + column as u64, y + row as u64, colour);
                 }
             }
-        }
-    }
-
-    fn text(&mut self, x: u64, y: u64, value: &str, colour: Colour) {
-        let mut cursor = x;
-
-        for character in value.chars() {
-            self.draw_character(cursor, y, character, colour);
-            cursor = cursor.saturating_add(self.cell_width());
         }
     }
 
@@ -210,31 +204,8 @@ impl Display {
     }
 
     fn draw_boot_screen(&mut self) {
+        // Begin with a clean text console; boot diagnostics remain on serial.
         self.clear();
-        let margin = 2 * self.cell_width();
-
-        self.text(
-            margin,
-            2 * self.cell_height(),
-            "SESTINA OPERATING SYSTEM  VERSION 0.14",
-            CYAN,
-        );
-        self.text(
-            margin,
-            4 * self.cell_height(),
-            "COPYRIGHT 2026 SESTINA PROJECT",
-            LIGHT_GREY,
-        );
-        self.text(
-            margin,
-            7 * self.cell_height(),
-            "INITIALISING SYSTEM DEVICES...",
-            WHITE,
-        );
-        self.text(margin, 9 * self.cell_height(), "PLEASE WAIT.", LIGHT_GREY);
-
-        self.cursor_x = margin;
-        self.cursor_y = 12 * self.cell_height();
     }
 }
 
@@ -273,63 +244,4 @@ fn valid_mask(size: u8, shift: u8) -> bool {
 fn channel(value: u8, size: u8, shift: u8) -> u32 {
     let maximum = (1_u32 << size) - 1;
     ((u32::from(value) * maximum / 255) & maximum) << shift
-}
-
-fn glyph(character: char) -> [u8; 7] {
-    match character {
-        'A' => [14, 17, 17, 31, 17, 17, 17],
-        'B' => [30, 17, 17, 30, 17, 17, 30],
-        'C' => [14, 17, 16, 16, 16, 17, 14],
-        'D' => [30, 17, 17, 17, 17, 17, 30],
-        'E' => [31, 16, 16, 30, 16, 16, 31],
-        'F' => [31, 16, 16, 30, 16, 16, 16],
-        'G' => [14, 17, 16, 23, 17, 17, 15],
-        'H' => [17, 17, 17, 31, 17, 17, 17],
-        'I' => [14, 4, 4, 4, 4, 4, 14],
-        'J' => [7, 2, 2, 2, 18, 18, 12],
-        'K' => [17, 18, 20, 24, 20, 18, 17],
-        'L' => [16, 16, 16, 16, 16, 16, 31],
-        'M' => [17, 27, 21, 21, 17, 17, 17],
-        'N' => [17, 25, 21, 19, 17, 17, 17],
-        'O' => [14, 17, 17, 17, 17, 17, 14],
-        'P' => [30, 17, 17, 30, 16, 16, 16],
-        'Q' => [14, 17, 17, 17, 21, 18, 13],
-        'R' => [30, 17, 17, 30, 20, 18, 17],
-        'S' => [15, 16, 16, 14, 1, 1, 30],
-        'T' => [31, 4, 4, 4, 4, 4, 4],
-        'U' => [17, 17, 17, 17, 17, 17, 14],
-        'V' => [17, 17, 17, 17, 17, 10, 4],
-        'W' => [17, 17, 17, 21, 21, 21, 10],
-        'X' => [17, 17, 10, 4, 10, 17, 17],
-        'Y' => [17, 17, 10, 4, 4, 4, 4],
-        'Z' => [31, 1, 2, 4, 8, 16, 31],
-        '0' => [14, 17, 19, 21, 25, 17, 14],
-        '1' => [4, 12, 4, 4, 4, 4, 14],
-        '2' => [14, 17, 1, 2, 4, 8, 31],
-        '3' => [30, 1, 1, 14, 1, 1, 30],
-        '4' => [2, 6, 10, 18, 31, 2, 2],
-        '5' => [31, 16, 16, 30, 1, 1, 30],
-        '6' => [14, 16, 16, 30, 17, 17, 14],
-        '7' => [31, 1, 2, 4, 8, 8, 8],
-        '8' => [14, 17, 17, 14, 17, 17, 14],
-        '9' => [14, 17, 17, 15, 1, 1, 14],
-        '/' => [1, 1, 2, 4, 8, 16, 16],
-        '\\' => [16, 16, 8, 4, 2, 1, 1],
-        '|' => [4, 4, 4, 4, 4, 4, 4],
-        '[' => [14, 8, 8, 8, 8, 8, 14],
-        ']' => [14, 2, 2, 2, 2, 2, 14],
-        '>' => [16, 8, 4, 2, 4, 8, 16],
-        '<' => [1, 2, 4, 8, 4, 2, 1],
-        '=' => [0, 31, 0, 31, 0, 0, 0],
-        '+' => [0, 4, 4, 31, 4, 4, 0],
-        '#' => [10, 31, 10, 10, 31, 10, 0],
-        '*' => [0, 21, 14, 31, 14, 21, 0],
-        '!' => [4, 4, 4, 4, 4, 0, 4],
-        ':' => [0, 4, 4, 0, 4, 4, 0],
-        '.' => [0, 0, 0, 0, 0, 12, 12],
-        '-' => [0, 0, 0, 31, 0, 0, 0],
-        '_' => [0, 0, 0, 0, 0, 0, 31],
-        ' ' => [0; 7],
-        _ => [31, 17, 1, 2, 4, 0, 4],
-    }
 }
