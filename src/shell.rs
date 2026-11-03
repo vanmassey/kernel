@@ -55,7 +55,7 @@ impl Console {
             if let Some(event) = keyboard.poll_event() {
                 if event.pressed && !event.extended {
                     match event.scancode {
-                        0x1c => return b'\\r',
+                        0x1c => return b'\r',
                         0x0e => return 8,
                         _ => {
                             if let Some(byte) = event.ascii {
