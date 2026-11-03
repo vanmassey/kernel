@@ -322,10 +322,39 @@ pub extern "C" fn _start() -> ! {
     let _ = writeln!(serial, "[interrupt] PIC remapped; only IRQ0 unmasked");
     let _ = writeln!(serial, "[timer] PIT configured at 100 Hz");
 
-    // Wait for one second of timer ticks. STI followed by HLT avoids a busy loop;
-    // the IRQ0 handler acknowledges the PIC and increments the atomic tick count.
-    // SAFETY: IRQ0 has a valid IDT gate and is the only unmasked legacy IRQ.
+    let mut keyboard = arch::x86_64::keyboard::Keyboard::new();
+    let _ = writeln!(
+        serial,
+        "[keyboard] PS/2 polling interface ready; IRQ1 remains masked"
+    );
+    let _ = writeln!(
+        serial,
+        "[keyboard] Scancode decoder self-test: {}",
+        if arch::x86_64::keyboard::Keyboard::decoder_self_test() {
+            "passed"
+        } else {
+            "FAILED"
+        }
+    );
+
+    // Poll input while the timer provides a low-frequency wake-up. IRQ1 stays
+    // masked; this first driver stage does not alter the controller or PIC setup.
     while arch::x86_64::interrupts::ticks() < 100 {
+        if let Some(event) = keyboard.poll_event() {
+            if event.pressed {
+                if let Some(character) = event.ascii {
+                    let _ = writeln!(serial, "[keyboard] key: {}", char::from(character));
+                } else {
+                    let _ = writeln!(
+                        serial,
+                        "[keyboard] key event: scancode {:#04x}, extended={}",
+                        event.scancode, event.extended
+                    );
+                }
+            }
+        }
+
+        // STI followed by HLT avoids a busy loop while the PIT wakes the CPU.
         unsafe {
             core::arch::asm!("sti", "hlt", options(nomem, nostack));
         }
@@ -339,9 +368,54 @@ pub extern "C" fn _start() -> ! {
     );
     let _ = writeln!(
         serial,
-        "[boot] Display and timer initialisation complete; CPU halted"
+        "[boot] Display, timer, and keyboard initialisation complete"
     );
     halt()
+}
+
+fn additional_page_mapping_self_test(
+    allocator: &mut memory::allocator::PhysicalFrameAllocator,
+    hhdm_offset: u64,
+    virtual_address: u64,
+) -> bool {
+    let Some(frame) = allocator.allocate_frame() else {
+        return false;
+    };
+    let Some(last_physical) = frame.start_address.checked_add(4095) else {
+        return false;
+    };
+    let Some(direct_address) = memory::frame::physical_to_virtual(frame.start_address, hhdm_offset)
+    else {
+        return false;
+    };
+    if memory::frame::physical_to_virtual(last_physical, hhdm_offset).is_none() {
+        return false;
+    }
+
+    // SAFETY: The frame is newly reserved and its complete page is addressable via the HHDM.
+    unsafe {
+        core::ptr::write_bytes(direct_address.as_u64() as *mut u8, 0, 4096);
+    }
+    // SAFETY: Early boot is single-core, ring 0, and the supplied allocator exclusively
+    // owns its frames; the active kernel page tables and HHDM are valid.
+    if unsafe {
+        memory::paging::map_4k_current(allocator, hhdm_offset, virtual_address, frame.start_address)
+    }
+    .is_err()
+    {
+        return false;
+    }
+
+    const PATTERN: u64 = 0x5345_5354_494e_4102;
+    // SAFETY: The mapper has just installed this writable virtual-to-physical mapping.
+    unsafe {
+        core::ptr::write_volatile(virtual_address as *mut u64, PATTERN);
+    }
+    // SAFETY: The virtual address and HHDM address alias the same reserved physical frame.
+    let mapped = unsafe { core::ptr::read_volatile(virtual_address as *const u64) };
+    // SAFETY: The direct-map address was validated above and refers to the same reserved frame.
+    let direct = unsafe { core::ptr::read_volatile(direct_address.as_u64() as *const u64) };
+    mapped == PATTERN && direct == PATTERN
 }
 
 fn additional_page_mapping_self_test(
