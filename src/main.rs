@@ -340,9 +340,23 @@ pub extern "C" fn _start() -> ! {
         }
     );
 
-    // Poll input while the timer provides a low-frequency wake-up. IRQ1 stays
-    // masked; this first driver stage does not alter the controller or PIC setup.
+    // Polling continues after the timer self-test, with the PIT waking the
+    // processor regularly. IRQ1 remains masked throughout this first driver stage.
     while arch::x86_64::interrupts::ticks() < 100 {
+        unsafe {
+            core::arch::asm!("sti", "hlt", options(nomem, nostack));
+        }
+    }
+    // SAFETY: Disable interrupts while reporting the completed timer self-test.
+    unsafe { core::arch::asm!("cli", options(nomem, nostack)) };
+    let _ = writeln!(
+        serial,
+        "[timer] Interrupt self-test passed: {} ticks",
+        arch::x86_64::interrupts::ticks()
+    );
+    let _ = writeln!(serial, "[keyboard] Input polling loop active");
+
+    loop {
         if let Some(event) = keyboard.poll_event() {
             if event.pressed {
                 if let Some(character) = event.ascii {
@@ -357,24 +371,12 @@ pub extern "C" fn _start() -> ! {
             }
         }
 
-        // STI followed by HLT avoids a busy loop while the PIT wakes the CPU.
+        // STI followed by HLT avoids a busy loop; the PIT provides periodic wake-ups.
         unsafe {
             core::arch::asm!("sti", "hlt", options(nomem, nostack));
         }
     }
-    // SAFETY: Disable interrupts before reading the final count and halting.
-    unsafe { core::arch::asm!("cli", options(nomem, nostack)) };
-    let _ = writeln!(
-        serial,
-        "[timer] Interrupt self-test passed: {} ticks",
-        arch::x86_64::interrupts::ticks()
-    );
-    let _ = writeln!(
-        serial,
-        "[boot] Display, timer, and keyboard initialisation complete"
-    );
-    halt()
-}
+
 
 fn additional_page_mapping_self_test(
     allocator: &mut memory::allocator::PhysicalFrameAllocator,
