@@ -73,6 +73,8 @@ impl SerialPort {
     }
 
     fn write_byte(&mut self, byte: u8) {
+        // Mirror early diagnostics to the framebuffer when it is available.
+        crate::display::framebuffer::write_byte(byte);
         for _ in 0..1_000_000 {
             // SAFETY: Read the COM1 line-status register while polling transmitter readiness.
             if unsafe { Self::input(Self::COM1 + 5) } & 0x20 != 0 {
@@ -102,6 +104,18 @@ pub extern "C" fn _start() -> ! {
     // SAFETY: This is the single early-boot initialisation of COM1.
     unsafe { SerialPort::initialise() };
     let mut serial = SerialPort;
+
+    // Bring up the framebuffer before subsystem initialisation so boot logs
+    // appear on the screen as well as on the serial diagnostic port.
+    match display::framebuffer::draw_boot_screen() {
+        Some((width, height)) => {
+            let _ = writeln!(serial, "[display] Framebuffer online: {}x{} RGB", width, height);
+        }
+        None => {
+            let _ = writeln!(serial, "[display] No supported Limine RGB framebuffer");
+        }
+    }
+
     let _ = writeln!(serial, "");
     let _ = writeln!(serial, "========================================");
     let _ = writeln!(serial, "  SESTINA :: x86_64 kernel");
@@ -314,18 +328,6 @@ pub extern "C" fn _start() -> ! {
         }
     }
 
-    match display::framebuffer::draw_boot_screen() {
-        Some((width, height)) => {
-            let _ = writeln!(
-                serial,
-                "[display] Framebuffer online: {}x{} RGB",
-                width, height
-            );
-        }
-        None => {
-            let _ = writeln!(serial, "[display] No supported Limine RGB framebuffer");
-        }
-    }
     let _ = writeln!(
         serial,
         "[boot] Milestone 0.14: timer and PS/2 keyboard polling"
