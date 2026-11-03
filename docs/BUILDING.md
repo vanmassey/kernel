@@ -338,6 +338,7 @@ ordinary kernel boot unless you specifically want to run that test.
 | `make verify` | Check formatting and build |
 | `make iso LIMINE_DIR="$LIMINE_DIR"` | Create a bootable ISO |
 | `make run LIMINE_DIR="$LIMINE_DIR"` | Run interactively in QEMU |
+| `make demo LIMINE_DIR="$LIMINE_DIR"` | Verify, run both QEMU tests, then launch the interactive demonstration |
 | `make boot-test LIMINE_DIR="$LIMINE_DIR"` | Run the boot smoke test |
 | `make exception-test FEATURES=exception-test LIMINE_DIR="$LIMINE_DIR"` | Run the exception test |
 | `make clean` | Remove Cargo and generated build output |
@@ -375,15 +376,15 @@ with the required components and runs:
 make verify
 ```
 
-The `boot-smoke` job runs for pull requests and when the workflow is started
-manually with the `workflow_dispatch` event. It installs QEMU and xorriso,
+The `boot-smoke` job runs for pull requests, pushes to `main`, and when the
+workflow is started manually with the `workflow_dispatch` event. It installs QEMU and xorriso,
 downloads the pinned Limine v12.9.6 binary release, builds the ISO, runs
 `make boot-test`, and then runs `make exception-test`.
 
-A green pull-request build job confirms formatting and compilation. The
-separate boot-smoke job additionally checks that the ISO reaches the expected
-startup milestones in QEMU, including the RAMFS self-test. The exception test
-checks the controlled breakpoint diagnostic path.
+A green build job confirms formatting and compilation. The boot-smoke job
+additionally checks that the ISO reaches the expected startup milestones in
+QEMU, including the RAMFS self-test. The exception test checks the controlled
+breakpoint diagnostic path.
 
 To run the workflow manually from GitHub:
 
