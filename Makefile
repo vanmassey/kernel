@@ -3,9 +3,10 @@ KERNEL := target/$(TARGET)/debug/kernel
 ISO_ROOT := build/iso_root
 LIMINE_VERSION := v12.9.6
 LIMINE_ARCHIVE := build/limine-binary.tar.gz
-# Prefer an existing local Limine checkout; otherwise limine-setup downloads the
-# same pinned binary release used by the GitHub Actions boot-smoke job.
-LIMINE_DIR ?= $(shell find limine build/limine -type f -name limine-bios.sys -print -quit 2>/dev/null | sed 's|/limine-bios.sys$$||')
+LIMINE_DIR ?=
+# Recursive expansion is intentional: after limine-setup extracts the archive,
+# this finds the actual directory even when the archive contains a versioned folder.
+LIMINE_PATH = $(if $(LIMINE_DIR),$(LIMINE_DIR),$(shell find limine build/limine -type f -name limine-bios.sys -print -quit 2>/dev/null | sed 's|/limine-bios.sys$$||'))
 
 .PHONY: all build check fmt verify clean limine-setup iso run boot-test exception-test
 
@@ -34,25 +35,25 @@ limine-setup:
 			https://github.com/Limine-Bootloader/Limine/releases/download/$(LIMINE_VERSION)/limine-binary.tar.gz \
 			--output "$(LIMINE_ARCHIVE)"; \
 		tar -xzf "$(LIMINE_ARCHIVE)" -C build/limine; \
-		LIMINE_DIR="$$(dirname "$$(find build/limine -type f -name limine-bios.sys -print -quit)")"; \
-		test -n "$$LIMINE_DIR" || (echo "Could not find limine-bios.sys in the downloaded Limine release." && exit 1); \
-		make -C "$$LIMINE_DIR"; \
+		limine_dir="$$(dirname "$$(find build/limine -type f -name limine-bios.sys -print -quit)")"; \
+		test -n "$$limine_dir" || (echo "Could not find limine-bios.sys in the downloaded Limine release." && exit 1); \
+		make -C "$$limine_dir"; \
 	fi
-	@test -x "$(if $(LIMINE_DIR),$(LIMINE_DIR),$(shell find build/limine -type f -name limine -perm -111 -print -quit))" || (echo "Limine utility was not built successfully." && exit 1)
+	@test -x "$(LIMINE_PATH)/limine" || (echo "Limine utility was not built successfully in $(LIMINE_PATH)." && exit 1)
 
 iso: build limine-setup
 	@test -f "$(KERNEL)" || (echo "Kernel ELF not found: $(KERNEL)" && exit 1)
-	@test -f "$(LIMINE_DIR)/limine-bios.sys" || (echo "Limine BIOS files not found; check LIMINE_DIR." && exit 1)
+	@test -f "$(LIMINE_PATH)/limine-bios.sys" || (echo "Limine BIOS files not found; check LIMINE_DIR." && exit 1)
 	rm -rf "$(ISO_ROOT)"
 	mkdir -p "$(ISO_ROOT)/boot/limine" "$(ISO_ROOT)/EFI/BOOT"
 	cp "$(KERNEL)" "$(ISO_ROOT)/boot/kernel.elf"
 	cp limine.conf "$(ISO_ROOT)/boot/limine/limine.conf"
-	cp "$(LIMINE_DIR)/limine-bios.sys" "$(ISO_ROOT)/boot/limine/"
-	cp "$(LIMINE_DIR)/limine-bios-cd.bin" "$(ISO_ROOT)/boot/limine/"
-	cp "$(LIMINE_DIR)/limine-uefi-cd.bin" "$(ISO_ROOT)/boot/limine/"
-	cp "$(LIMINE_DIR)/BOOTX64.EFI" "$(ISO_ROOT)/EFI/BOOT/"
+	cp "$(LIMINE_PATH)/limine-bios.sys" "$(ISO_ROOT)/boot/limine/"
+	cp "$(LIMINE_PATH)/limine-bios-cd.bin" "$(ISO_ROOT)/boot/limine/"
+	cp "$(LIMINE_PATH)/limine-uefi-cd.bin" "$(ISO_ROOT)/boot/limine/"
+	cp "$(LIMINE_PATH)/BOOTX64.EFI" "$(ISO_ROOT)/EFI/BOOT/"
 	xorriso -as mkisofs -R -r -J -b boot/limine/limine-bios-cd.bin -no-emul-boot -boot-load-size 4 -boot-info-table --efi-boot boot/limine/limine-uefi-cd.bin -efi-boot-part --efi-boot-image --protective-msdos-label "$(ISO_ROOT)" -o build/kernel.iso
-	"$(LIMINE_DIR)/limine" bios-install build/kernel.iso
+	"$(LIMINE_PATH)/limine" bios-install build/kernel.iso
 
 run: iso
 	qemu-system-x86_64 -M q35 -m 256M -cdrom build/kernel.iso -boot order=d -serial stdio -no-reboot -no-shutdown
