@@ -4,6 +4,7 @@ use core::fmt::{self, Write};
 
 use crate::arch::x86_64::cpu::CpuInfo;
 use crate::arch::x86_64::interrupts;
+use crate::arch::x86_64::keyboard::Keyboard;
 
 const LINE_CAPACITY: usize = 128;
 const HISTORY_CAPACITY: usize = 8;
@@ -49,8 +50,22 @@ impl Console {
         }
     }
 
-    fn get_byte() -> u8 {
+    fn get_byte(keyboard: &mut Keyboard) -> u8 {
         loop {
+            if let Some(event) = keyboard.poll_event() {
+                if event.pressed && !event.extended {
+                    match event.scancode {
+                        0x1c => return b'\r',
+                        0x0e => return 8,
+                        _ => {
+                            if let Some(byte) = event.ascii {
+                                return byte;
+                            }
+                        }
+                    }
+                }
+            }
+
             if let Some(byte) = Self::try_get_byte() {
                 return byte;
             }
@@ -84,6 +99,7 @@ impl Write for Console {
 /// Runs the first interactive shell over the COM1 serial port.
 pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
     let mut console = Console;
+    let mut keyboard = Keyboard::new();
     let vendor = core::str::from_utf8(&cpu.vendor).unwrap_or("unknown");
     let mut line = [0u8; LINE_CAPACITY];
     let mut history_entries = [[0u8; LINE_CAPACITY]; HISTORY_CAPACITY];
@@ -104,7 +120,7 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
         let mut navigating_history = false;
 
         loop {
-            let byte = Console::get_byte();
+            let byte = Console::get_byte(&mut keyboard);
 
             match byte {
                 b'\r' | b'\n' => {
