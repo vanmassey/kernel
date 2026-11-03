@@ -500,8 +500,10 @@ The following are implementation limitations, not build errors:
   private 4 KiB mapping. Existing kernel page tables are shared; this is not
   yet process isolation.
 - The PS/2 keyboard is currently polled; IRQ1 remains masked.
-- Timer interrupts are configured through the PIT and PIC. The shell enables
-  interrupts so the timer can continue waking the CPU while it waits for input.
+- Timer interrupts are configured through the PIT and PIC. On the current
+  main branch, maskable interrupts are disabled before the shell is entered,
+  so the timer does not continue ticking while the shell waits for input.
+  The timer-interrupts-in-shell change is being developed separately.
 - The current shell and device support are early kernel facilities, not a
   complete user-space operating environment.
 
