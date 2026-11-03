@@ -12,6 +12,7 @@ use core::panic::PanicInfo;
 mod arch;
 mod boot;
 mod display;
+mod filesystem;
 mod memory;
 mod shell;
 
@@ -220,6 +221,15 @@ pub extern "C" fn _start() -> ! {
                             serial,
                             "[memory] Rust Vec self-test: {}",
                             if heap_vec_self_test() {
+                                "passed"
+                            } else {
+                                "FAILED"
+                            }
+                        );
+                        let _ = writeln!(
+                            serial,
+                            "[filesystem] RAMFS self-test: {}",
+                            if filesystem::ramfs::self_test() {
                                 "passed"
                             } else {
                                 "FAILED"
