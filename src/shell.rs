@@ -120,8 +120,8 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
     }
 
     let _ = writeln!(console, "");
-    let _ = writeln!(console, "Sestina operating system");
-    let _ = writeln!(console, "Type 'help' to list available commands.");
+    let _ = writeln!(console, "Sestina Command Interpreter [Version 0.14]");
+    let _ = writeln!(console, "Type HELP to display the command list.");
 
     loop {
         let _ = write!(console, "C:\\>");
