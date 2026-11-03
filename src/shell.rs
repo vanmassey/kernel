@@ -200,7 +200,6 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
     }
 }
 
-
 fn print_help(console: &mut Console, topic: &str) {
     if topic.is_empty() {
         let _ = writeln!(console, "Available commands:");
@@ -212,17 +211,26 @@ fn print_help(console: &mut Console, topic: &str) {
         let _ = writeln!(console, "  uptime          Show time since shell startup");
         let _ = writeln!(console, "  ticks           Show hardware timer ticks");
         let _ = writeln!(console, "  history         Show the last eight commands");
-        let _ = writeln!(console, "  clear           Clear a compatible serial terminal");
+        let _ = writeln!(
+            console,
+            "  clear           Clear a compatible serial terminal"
+        );
         let _ = writeln!(console, "  echo TEXT       Print TEXT");
         return;
     }
 
     match topic {
         "help" => {
-            let _ = writeln!(console, "help [COMMAND] - list commands or explain one command");
+            let _ = writeln!(
+                console,
+                "help [COMMAND] - list commands or explain one command"
+            );
         }
         "about" => {
-            let _ = writeln!(console, "about - describe the Sestina operating-system project");
+            let _ = writeln!(
+                console,
+                "about - describe the Sestina operating-system project"
+            );
         }
         "uname" => {
             let _ = writeln!(console, "uname - print the kernel name and architecture");
@@ -243,7 +251,10 @@ fn print_help(console: &mut Console, topic: &str) {
             let _ = writeln!(console, "history - list the last eight entered commands");
         }
         "clear" => {
-            let _ = writeln!(console, "clear - send ANSI clear-screen and cursor-home codes");
+            let _ = writeln!(
+                console,
+                "clear - send ANSI clear-screen and cursor-home codes"
+            );
         }
         "echo" => {
             let _ = writeln!(console, "echo TEXT - print TEXT to the console");
