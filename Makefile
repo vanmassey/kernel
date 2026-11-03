@@ -3,7 +3,7 @@ KERNEL := target/$(TARGET)/debug/kernel
 ISO_ROOT := build/iso_root
 LIMINE_DIR ?= limine
 
-.PHONY: all build check clean iso run boot-test exception-test
+.PHONY: all build check clean iso run boot-test exception-test timer-test
 
 all: build
 
@@ -46,7 +46,10 @@ boot-test: iso
 	@grep -F "[memory] New PML4 active:" build/qemu-serial.log
 	@grep -F "[memory] 4 KiB page mapping self-test: passed" build/qemu-serial.log
 	@grep -F "[memory] General 4 KiB mapper self-test: passed" build/qemu-serial.log
-	@grep -F "[boot] Milestone 0.12: general 4 KiB page mapping" build/qemu-serial.log
+	@grep -F "[boot] Milestone 0.13: legacy PIC and PIT timer" build/qemu-serial.log
+	@grep -F "[interrupt] PIC remapped; only IRQ0 unmasked" build/qemu-serial.log
+	@grep -F "[timer] PIT configured at 100 Hz" build/qemu-serial.log
+	@grep -F "[timer] Interrupt self-test passed:" build/qemu-serial.log
 	@grep -F "[display] Framebuffer online:" build/qemu-serial.log
 	@echo "QEMU boot smoke test passed."
 
