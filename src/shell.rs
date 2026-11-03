@@ -1,4 +1,4 @@
-//! Minimal serial command-line interface for early Sestina development.
+//! Text-mode command interpreter with serial and framebuffer output.
 
 use core::fmt::{self, Write};
 
@@ -45,6 +45,7 @@ impl Console {
     }
 
     fn put_byte(byte: u8) {
+        crate::display::framebuffer::write_byte(byte);
         for _ in 0..1_000_000 {
             if Self::input(Self::COM1 + 5) & 0x20 != 0 {
                 Self::output(Self::COM1, byte);
@@ -125,11 +126,11 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
     }
 
     let _ = writeln!(console, "");
-    let _ = writeln!(console, "Sestina operating system");
-    let _ = writeln!(console, "Type 'help' to list available commands.");
+    let _ = writeln!(console, "Sestina Command Interpreter [Version 0.14]");
+    let _ = writeln!(console, "Type HELP to display the command list.");
 
     loop {
-        let _ = write!(console, "sestina> ");
+        let _ = write!(console, "C:\\>");
         let mut length = 0usize;
         let mut history_position = history_count;
         let mut draft = [0u8; LINE_CAPACITY];
@@ -291,7 +292,7 @@ pub fn run(cpu: &CpuInfo, start_ticks: u64) -> ! {
                 }
             }
             "clear" => {
-                let _ = write!(console, "\\x1b[2J\\x1b[H");
+                let _ = write!(console, "\x1b[2J\x1b[H");
             }
             "echo" => {
                 let _ = writeln!(console, "{}", args);
@@ -390,7 +391,7 @@ fn redraw_line(
     length: usize,
     old_length: usize,
 ) {
-    let _ = write!(console, "\rsestina> ");
+    let _ = write!(console, "\rC:\\>");
     for byte in &line[..length] {
         Console::put_byte(*byte);
     }
@@ -419,10 +420,7 @@ fn print_help(console: &mut Console, topic: &str) {
         let _ = writeln!(console, "  uptime          Show time since shell startup");
         let _ = writeln!(console, "  ticks           Show hardware timer ticks");
         let _ = writeln!(console, "  history         Show the last eight commands");
-        let _ = writeln!(
-            console,
-            "  clear           Clear a compatible serial terminal"
-        );
+        let _ = writeln!(console, "  clear           Clear the screen");
         let _ = writeln!(console, "  echo TEXT       Print TEXT");
         let _ = writeln!(console, "  pwd             Show the current directory (/)");
         let _ = writeln!(console, "  ls [PATH]       List a directory (default: /)");
