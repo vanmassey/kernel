@@ -14,6 +14,7 @@ mod boot;
 mod display;
 mod filesystem;
 mod memory;
+mod net;
 mod shell;
 
 #[used]
