@@ -45,18 +45,12 @@ pub fn enumerate(mut visit: impl FnMut(Device)) -> usize {
     let mut next_pending = 0_usize;
     let mut visited = [0_u64; 4];
     pending[0] = 0;
+    visited[0] |= 1;
     let mut count = 0;
 
     while next_pending < pending_len {
         let bus = pending[next_pending];
         next_pending += 1;
-
-        let mask = 1_u64 << (bus as usize % 64);
-        let slot = &mut visited[bus as usize / 64];
-        if *slot & mask != 0 {
-            continue;
-        }
-        *slot |= mask;
 
         for device in 0_u8..32 {
             let vendor0 = read_u16(bus, device, 0, 0x00);
@@ -102,8 +96,9 @@ pub fn enumerate(mut visit: impl FnMut(Device)) -> usize {
                     let secondary = read_u8(bus, device, function, 0x19);
                     if secondary != 0 && pending_len < pending.len() {
                         let secondary_mask = 1_u64 << (secondary as usize % 64);
-                        let secondary_slot = visited[secondary as usize / 64];
-                        if secondary_slot & secondary_mask == 0 {
+                        let secondary_slot = &mut visited[secondary as usize / 64];
+                        if *secondary_slot & secondary_mask == 0 {
+                            *secondary_slot |= secondary_mask;
                             pending[pending_len] = secondary;
                             pending_len += 1;
                         }
@@ -181,6 +176,6 @@ mod tests {
     fn config_address_encodes_bdf_and_aligned_offset() {
         assert_eq!(config_address(0, 0, 0, 0), 0x8000_0000);
         assert_eq!(config_address(2, 3, 1, 0x0b), 0x8002_1908);
-        assert_eq!(config_address(255, 31, 7, 0xfc), 0x80ff_fffc);
+        assert_eq!(config_address(255, 31, 7, 0xfc), 0x80ff_ffff);
     }
 }
