@@ -109,7 +109,11 @@ pub extern "C" fn _start() -> ! {
     // appear on the screen as well as on the serial diagnostic port.
     match display::framebuffer::draw_boot_screen() {
         Some((width, height)) => {
-            let _ = writeln!(serial, "[display] Framebuffer online: {}x{} RGB", width, height);
+            let _ = writeln!(
+                serial,
+                "[display] Framebuffer online: {}x{} RGB",
+                width, height
+            );
         }
         None => {
             let _ = writeln!(serial, "[display] No supported Limine RGB framebuffer");
@@ -147,6 +151,26 @@ pub extern "C" fn _start() -> ! {
         serial,
         "[cpu] NX: {}, 1 GiB pages: {}, SYSCALL: {}, long mode: {}",
         cpu.has_nx, cpu.has_1gib_pages, cpu.has_syscall, cpu.has_long_mode
+    );
+
+    let pci_count = arch::x86_64::pci::enumerate(|device| {
+        let _ = writeln!(
+            serial,
+            "[pci] {:02x}:{:02x}.{} {:04x}:{:04x} class={:02x}:{:02x}:{:02x}",
+            device.bus,
+            device.device,
+            device.function,
+            device.vendor_id,
+            device.device_id,
+            device.class_code,
+            device.subclass,
+            device.programming_interface
+        );
+    });
+    let _ = writeln!(
+        serial,
+        "[pci] Enumeration complete: {} functions",
+        pci_count
     );
 
     // SAFETY: Limine populated the memory-map response before transferring control.

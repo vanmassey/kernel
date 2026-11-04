@@ -71,6 +71,7 @@ boot-test: iso
 	@grep -F "[cpu] Exception diagnostics enabled (vectors 0-31)" build/qemu-serial.log
 	@grep -F "[cpu] Vendor:" build/qemu-serial.log
 	@grep -F "[cpu] NX:" build/qemu-serial.log
+	@grep -F "[pci] Enumeration complete:" build/qemu-serial.log
 	@grep -F "[memory] HHDM offset:" build/qemu-serial.log
 	@grep -F "[memory] Direct-map virtual address:" build/qemu-serial.log
 	@grep -F "[memory] Active page-table translation:" build/qemu-serial.log
