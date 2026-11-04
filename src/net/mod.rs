@@ -4,4 +4,5 @@
 //! parsers operate on borrowed byte slices; NIC drivers and packet queues can
 //! be added as separate layers later.
 
+pub mod arp;
 pub mod ethernet;
