@@ -68,15 +68,11 @@ pub fn parse(packet: &[u8]) -> Result<ArpPacket, ParseError> {
         sender_hardware_address: MacAddress([
             packet[8], packet[9], packet[10], packet[11], packet[12], packet[13],
         ]),
-        sender_protocol_address: Ipv4Address([
-            packet[14], packet[15], packet[16], packet[17],
-        ]),
+        sender_protocol_address: Ipv4Address([packet[14], packet[15], packet[16], packet[17]]),
         target_hardware_address: MacAddress([
             packet[18], packet[19], packet[20], packet[21], packet[22], packet[23],
         ]),
-        target_protocol_address: Ipv4Address([
-            packet[24], packet[25], packet[26], packet[27],
-        ]),
+        target_protocol_address: Ipv4Address([packet[24], packet[25], packet[26], packet[27]]),
     })
 }
 
