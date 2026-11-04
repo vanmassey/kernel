@@ -5,4 +5,5 @@
 //! be added as separate layers later.
 
 pub mod arp;
+pub mod arp_cache;
 pub mod ethernet;
