@@ -59,12 +59,8 @@ pub fn parse(frame: &[u8]) -> Result<EthernetFrame<'_>, ParseError> {
         return Err(ParseError::TruncatedHeader);
     }
 
-    let destination = MacAddress([
-        frame[0], frame[1], frame[2], frame[3], frame[4], frame[5],
-    ]);
-    let source = MacAddress([
-        frame[6], frame[7], frame[8], frame[9], frame[10], frame[11],
-    ]);
+    let destination = MacAddress([frame[0], frame[1], frame[2], frame[3], frame[4], frame[5]]);
+    let source = MacAddress([frame[6], frame[7], frame[8], frame[9], frame[10], frame[11]]);
     let raw_type = u16::from_be_bytes([frame[12], frame[13]]);
 
     if raw_type < 0x0600 {
@@ -113,7 +109,10 @@ mod tests {
 
     #[test]
     fn rejects_truncated_header() {
-        assert_eq!(parse(&[0_u8; HEADER_LEN - 1]), Err(ParseError::TruncatedHeader));
+        assert_eq!(
+            parse(&[0_u8; HEADER_LEN - 1]),
+            Err(ParseError::TruncatedHeader)
+        );
         assert_eq!(parse(&[]), Err(ParseError::TruncatedHeader));
     }
 
