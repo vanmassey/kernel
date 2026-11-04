@@ -37,11 +37,7 @@ impl ArpCache {
     /// Return the hardware address for an IPv4 address if a live entry exists.
     ///
     /// Expired entries are removed during lookup.
-    pub fn lookup(
-        &mut self,
-        protocol_address: Ipv4Address,
-        now_ms: u64,
-    ) -> Option<MacAddress> {
+    pub fn lookup(&mut self, protocol_address: Ipv4Address, now_ms: u64) -> Option<MacAddress> {
         for entry in &mut self.entries {
             if let Some(candidate) = *entry {
                 if Self::is_expired(candidate, now_ms) {
@@ -84,9 +80,7 @@ impl ArpCache {
 
         // Reuse an empty or expired slot before evicting a live mapping.
         for entry in &mut self.entries {
-            if entry.is_none()
-                || entry.is_some_and(|candidate| Self::is_expired(candidate, now_ms))
-            {
+            if entry.is_none() || entry.is_some_and(|candidate| Self::is_expired(candidate, now_ms)) {
                 *entry = new_entry;
                 return;
             }
