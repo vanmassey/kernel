@@ -149,6 +149,22 @@ pub extern "C" fn _start() -> ! {
         cpu.has_nx, cpu.has_1gib_pages, cpu.has_syscall, cpu.has_long_mode
     );
 
+    let pci_count = arch::x86_64::pci::enumerate(|device| {
+        let _ = writeln!(
+            serial,
+            "[pci] {:02x}:{:02x}.{} {:04x}:{:04x} class={:02x}:{:02x}:{:02x}",
+            device.bus,
+            device.device,
+            device.function,
+            device.vendor_id,
+            device.device_id,
+            device.class_code,
+            device.subclass,
+            device.programming_interface
+        );
+    });
+    let _ = writeln!(serial, "[pci] Enumeration complete: {} functions", pci_count);
+
     // SAFETY: Limine populated the memory-map response before transferring control.
     if let Some(memory_map) = unsafe { boot::limine::memory_map_summary() } {
         let usable_mib = memory_map.usable_bytes / (1024 * 1024);
