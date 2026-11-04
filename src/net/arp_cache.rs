@@ -80,7 +80,8 @@ impl ArpCache {
 
         // Reuse an empty or expired slot before evicting a live mapping.
         for entry in &mut self.entries {
-            if entry.is_none() || entry.is_some_and(|candidate| Self::is_expired(candidate, now_ms)) {
+            if entry.is_none() || entry.is_some_and(|candidate| Self::is_expired(candidate, now_ms))
+            {
                 *entry = new_entry;
                 return;
             }
