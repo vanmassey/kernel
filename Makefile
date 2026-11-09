@@ -90,6 +90,7 @@ boot-test: iso
 	@grep -F "[keyboard] Scancode decoder self-test: passed" build/qemu-serial.log
 	@grep -F "[shell] Serial command shell ready" build/qemu-serial.log
 	@grep -F "[display] Framebuffer online:" build/qemu-serial.log
+	@grep -F "[display] Kanga mascot rendered" build/qemu-serial.log
 	@echo "QEMU boot smoke test passed."
 
 exception-test: iso

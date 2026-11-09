@@ -393,6 +393,11 @@ pub extern "C" fn _start() -> ! {
         arch::x86_64::interrupts::ticks()
     );
     let _ = writeln!(serial, "[shell] Serial command shell ready");
+    if display::framebuffer::draw_kanga_screen() {
+        let _ = writeln!(serial, "[display] Kanga mascot rendered");
+    } else {
+        let _ = writeln!(serial, "[display] Kanga mascot unavailable");
+    }
     shell::run(&cpu, arch::x86_64::interrupts::ticks());
 }
 

@@ -5,6 +5,10 @@ const CHARACTER_WIDTH: u64 = 8;
 const CHARACTER_HEIGHT: u64 = 16;
 const BLACK: Colour = Colour(0, 0, 0);
 const LIGHT_GREY: Colour = Colour(192, 192, 192);
+const KANGA_WIDTH: usize = 80;
+const KANGA_HEIGHT: usize = 89;
+const KANGA_RLE: &[u8] = include_bytes!("kanga.rle");
+const KANGA_PALETTE: &[u8] = include_bytes!("kanga.palette");
 
 #[derive(Clone, Copy)]
 struct Colour(u8, u8, u8);
@@ -203,6 +207,49 @@ impl Display {
         }
     }
 
+    fn draw_kanga(&mut self) {
+        let max_height = self.info.height.saturating_mul(3) / 5;
+        let scale = (max_height / KANGA_HEIGHT as u64)
+            .min(self.info.width / KANGA_WIDTH as u64)
+            .clamp(1, 4);
+        let draw_width = KANGA_WIDTH as u64 * scale;
+        let draw_height = KANGA_HEIGHT as u64 * scale;
+        let origin_x = (self.info.width - draw_width) / 2;
+        let origin_y = (self.info.height - draw_height) / 2;
+        let mut source_index = 0usize;
+
+        // The compact asset stores (run length, palette index) byte pairs.
+        for run in KANGA_RLE.chunks_exact(2) {
+            let count = run[0] as usize;
+            let palette_index = run[1] as usize;
+            let palette_offset = palette_index * 3;
+            if palette_offset + 2 >= KANGA_PALETTE.len() {
+                return;
+            }
+            let colour = Colour(
+                KANGA_PALETTE[palette_offset],
+                KANGA_PALETTE[palette_offset + 1],
+                KANGA_PALETTE[palette_offset + 2],
+            );
+
+            for _ in 0..count {
+                if source_index >= KANGA_WIDTH * KANGA_HEIGHT {
+                    return;
+                }
+                let source_x = source_index % KANGA_WIDTH;
+                let source_y = source_index / KANGA_WIDTH;
+                self.rectangle(
+                    origin_x + source_x as u64 * scale,
+                    origin_y + source_y as u64 * scale,
+                    scale,
+                    scale,
+                    colour,
+                );
+                source_index += 1;
+            }
+        }
+    }
+
     fn draw_boot_screen(&mut self) {
         // Begin with a clean text console; boot diagnostics remain on serial.
         self.clear();
@@ -235,6 +282,22 @@ pub fn draw_boot_screen() -> Option<(u64, u64)> {
     }
 
     Some((info.width, info.height))
+}
+
+/// Clears the boot diagnostics and draws the centred Kanga mascot.
+pub fn draw_kanga_screen() -> bool {
+    // SAFETY: The framebuffer display is installed before the shell starts.
+    unsafe {
+        let slot = core::ptr::addr_of_mut!(DISPLAY);
+        if let Some(slot) = slot.as_mut() {
+            if let Some(display) = slot.as_mut() {
+                display.clear();
+                display.draw_kanga();
+                return true;
+            }
+        }
+    }
+    false
 }
 
 fn valid_mask(size: u8, shift: u8) -> bool {
