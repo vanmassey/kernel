@@ -1,3 +1,5 @@
+Status: Maintained occasionally. Active kernel development continues in Kanga. Issues and small PRs welcome; large features are unlikely to land here.
+
 # Sestina
 
 Sestina is a from-scratch operating-system kernel for x86_64, written primarily in Rust.
